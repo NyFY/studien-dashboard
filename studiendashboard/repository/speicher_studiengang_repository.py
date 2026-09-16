@@ -34,7 +34,7 @@ class SpeicherStudiengangRepository(StudiengangRepository):
 
     def lade_ziele(self) -> list[Studienziel]:
         if self._ziele is None:
-            monate = self._studiengang.regelstudienzeit_monate if self._studiengang else 36
+            monate = self._studiengang.geplante_dauer_monate if self._studiengang else 48
             self._ziele = standardziele(monate)
         return self._ziele
 

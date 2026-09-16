@@ -38,10 +38,10 @@ def erzeuge_ziel(art: str, zielwert: float, toleranz: float, ist_aktiv: bool) ->
     return ziel
 
 
-def standardziele(regelstudienzeit_monate: int = 36) -> list[Studienziel]:
+def standardziele(geplante_dauer_monate: int = 48) -> list[Studienziel]:
     """Die drei Ziele aus der Konzeptionsphase mit ihren Ausgangswerten."""
     return [
-        Zeitziel(zielmonate=regelstudienzeit_monate),
+        Zeitziel(zielmonate=geplante_dauer_monate),
         Notenziel(zielnote=2.0),
         WipZiel(hoechstzahl=3),
     ]

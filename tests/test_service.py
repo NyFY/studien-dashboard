@@ -8,7 +8,7 @@ from datetime import date
 from studiendashboard.repository import erzeuge_beispielstudiengang
 from studiendashboard.service import FortschrittsService, NotenService
 
-STICHTAG = date(2026, 8, 18)
+STICHTAG = date(2026, 9, 16)
 
 
 class TestFortschrittsService(unittest.TestCase):
@@ -17,13 +17,14 @@ class TestFortschrittsService(unittest.TestCase):
         self.service = FortschrittsService()
 
     def test_beispieldatensatz_ist_stimmig(self) -> None:
-        self.assertEqual(self.studiengang.erreichte_ects, 105)
+        self.assertEqual(self.studiengang.erreichte_ects, 75)
         self.assertEqual(sum(m.ects for m in self.studiengang.module), 180)
         self.assertEqual(len(self.studiengang.offene_module), 4)
+        self.assertEqual(self.studiengang.geplante_dauer_monate, 48)
 
     def test_sollstand_am_stichtag(self) -> None:
         self.assertAlmostEqual(
-            self.service.soll_ects(self.studiengang, STICHTAG), 112.9, places=1
+            self.service.soll_ects(self.studiengang, STICHTAG), 88.2, places=1
         )
 
     def test_sollstand_am_studienbeginn_ist_null(self) -> None:
@@ -37,13 +38,13 @@ class TestFortschrittsService(unittest.TestCase):
         )
 
     def test_prognose_und_verzug(self) -> None:
-        self.assertEqual(self.service.prognose(self.studiengang, STICHTAG), date(2027, 12, 21))
-        self.assertEqual(self.service.tage_verzug(self.studiengang, STICHTAG), 82)
+        self.assertEqual(self.service.prognose(self.studiengang, STICHTAG), date(2029, 6, 13))
+        self.assertEqual(self.service.tage_verzug(self.studiengang, STICHTAG), 256)
 
     def test_ohne_bestandene_module_keine_prognose(self) -> None:
         from studiendashboard.domain import Studiengang
 
-        leer = Studiengang("Test", "B.Sc.", 180, 36, date(2024, 10, 1))
+        leer = Studiengang("Test", "B.Sc.", 180, 48, date(2024, 10, 1))
         self.assertIsNone(self.service.prognose(leer, STICHTAG))
 
     def test_verlauf_steigt_monoton(self) -> None:
@@ -51,7 +52,7 @@ class TestFortschrittsService(unittest.TestCase):
         werte = [punkt.ects for punkt in verlauf]
         self.assertEqual(werte, sorted(werte))
         self.assertEqual(werte[0], 0)
-        self.assertEqual(werte[-1], 105)
+        self.assertEqual(werte[-1], 75)
 
 
 class TestNotenService(unittest.TestCase):
@@ -60,11 +61,11 @@ class TestNotenService(unittest.TestCase):
         self.service = NotenService()
 
     def test_gewichteter_durchschnitt(self) -> None:
-        self.assertAlmostEqual(self.service.durchschnitt(self.studiengang), 1.8429, places=4)
+        self.assertAlmostEqual(self.service.durchschnitt(self.studiengang), 1.80, places=4)
 
     def test_benoetigter_restschnitt(self) -> None:
         rest = self.service.benoetigter_restschnitt(self.studiengang, zielnote=2.0)
-        self.assertAlmostEqual(rest, 2.22, places=2)
+        self.assertAlmostEqual(rest, 2.14, places=2)
 
     def test_restschnitt_haelt_die_gleichung_ein(self) -> None:
         """Gegenprobe: Mit dem errechneten Schnitt kommt genau die Zielnote heraus."""
@@ -77,8 +78,8 @@ class TestNotenService(unittest.TestCase):
 
     def test_verteilung_zaehlt_alle_bewerteten_module(self) -> None:
         verteilung = self.service.verteilung(self.studiengang)
-        self.assertEqual(sum(anzahl for _, anzahl in verteilung), 21)
-        self.assertEqual(dict(verteilung)["1,4-1,7"], 6)
+        self.assertEqual(sum(anzahl for _, anzahl in verteilung), 15)
+        self.assertEqual(dict(verteilung)["1,4-1,7"], 4)
 
     def test_gueltige_notenstufen(self) -> None:
         self.assertTrue(NotenService.ist_gueltige_note(2.3))
@@ -101,17 +102,17 @@ class TestRandfaelle(unittest.TestCase):
         self.assertIsNone(self.fortschritt.prognose(self.studiengang, date(9999, 12, 31)))
 
     def test_verlauf_laeuft_zeitlich_nicht_rueckwaerts(self) -> None:
-        for stichtag in (date(2025, 6, 1), date(2026, 8, 18), date(2027, 12, 1)):
+        for stichtag in (date(2025, 6, 1), STICHTAG, date(2027, 12, 1)):
             with self.subTest(stichtag=stichtag):
                 tage = [punkt.tag for punkt in self.fortschritt.verlauf(self.studiengang, stichtag)]
                 self.assertEqual(tage, sorted(tage))
 
     def test_ist_ects_folgen_dem_stichtag(self) -> None:
-        self.assertEqual(self.fortschritt.ist_ects(self.studiengang, date(2025, 6, 1)), 35)
-        self.assertEqual(self.fortschritt.ist_ects(self.studiengang, date(2026, 8, 18)), 105)
+        self.assertEqual(self.fortschritt.ist_ects(self.studiengang, date(2025, 6, 1)), 30)
+        self.assertEqual(self.fortschritt.ist_ects(self.studiengang, STICHTAG), 75)
 
     def test_notenband_wird_richtig_zugeordnet(self) -> None:
         self.assertEqual(NotenService.band_index(1.0), 0)
-        self.assertEqual(NotenService.band_index(1.8429), 2)
+        self.assertEqual(NotenService.band_index(1.80), 2)
         self.assertEqual(NotenService.band_index(4.0), 5)
         self.assertEqual(NotenService.band_index(None), -1)

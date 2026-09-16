@@ -19,7 +19,7 @@ class FortschrittsService:
     def soll_ects(self, studiengang: Studiengang, stichtag: date) -> float:
         """Wie viele ECTS zum Stichtag bei gleichmaessigem Fortschritt faellig waeren."""
         tage_bisher = (stichtag - studiengang.studienbeginn).days
-        tage_gesamt = studiengang.tage_regelstudienzeit
+        tage_gesamt = studiengang.tage_geplante_dauer
         if tage_gesamt <= 0:
             return 0.0
         anteil = min(max(tage_bisher / tage_gesamt, 0.0), 1.0)

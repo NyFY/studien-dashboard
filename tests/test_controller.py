@@ -13,7 +13,7 @@ from studiendashboard.service import FortschrittsService, NotenService
 from studiendashboard.view import KonsolenView
 from studiendashboard.ziele import Ampel, Notenziel, WipZiel, Zeitziel
 
-STICHTAG = date(2026, 8, 18)
+STICHTAG = date(2026, 9, 16)
 
 
 class TestDashboardController(unittest.TestCase):
@@ -28,11 +28,11 @@ class TestDashboardController(unittest.TestCase):
 
     def test_kennzahlen_stimmen(self) -> None:
         kennzahlen = self.daten.kennzahlen
-        self.assertEqual(kennzahlen.ects_ist, 105)
-        self.assertAlmostEqual(kennzahlen.ects_soll, 112.9, places=1)
+        self.assertEqual(kennzahlen.ects_ist, 75)
+        self.assertAlmostEqual(kennzahlen.ects_soll, 88.2, places=1)
         self.assertEqual(kennzahlen.offene_module, 4)
         self.assertEqual(kennzahlen.aeltestes_modul_tage, 96)
-        self.assertEqual(kennzahlen.aeltestes_modul_kuerzel, "DLBCSEHSF_D")
+        self.assertEqual(kennzahlen.aeltestes_modul_kuerzel, "DLBITIML")
 
     def test_drei_bewertungen_in_der_richtigen_reihenfolge(self) -> None:
         ampeln = [bewertung.ampel for bewertung in self.daten.bewertungen]
@@ -41,15 +41,15 @@ class TestDashboardController(unittest.TestCase):
     def test_modultabelle_beginnt_mit_dem_aeltesten(self) -> None:
         zeilen = self.daten.offene_module
         self.assertEqual(len(zeilen), 4)
-        self.assertEqual(zeilen[0].kuerzel, "DLBCSEHSF_D")
+        self.assertEqual(zeilen[0].kuerzel, "DLBITIML")
         self.assertEqual(zeilen[0].ampel, "rot")
         self.assertEqual(zeilen[-1].ampel, "gruen")
 
     def test_fristen_werden_je_pruefungsart_gebildet(self) -> None:
         fristen = {zeile.kuerzel: zeile.naechste_frist for zeile in self.daten.offene_module}
-        self.assertEqual(fristen["DLBCSEHSF_D"], "Klausur 12.09.2026")
-        self.assertEqual(fristen["DLBDSOOFPP01_D"], "Portfolio 25.08.2026")
-        self.assertEqual(fristen["DLBCSEISS_D"], "Fallstudie 30.09.2026")
+        self.assertEqual(fristen["DLBITIML"], "Klausur 10.10.2026")
+        self.assertEqual(fristen["DLBDSOOFPP01_D"], "Portfolio 22.09.2026")
+        self.assertEqual(fristen["IPMG-01"], "Klausur 14.11.2026")
 
     def test_deaktiviertes_ziel_wird_uebersprungen(self) -> None:
         ziele = [Zeitziel(), Notenziel(), WipZiel()]
@@ -72,8 +72,8 @@ class TestDashboardController(unittest.TestCase):
             KonsolenView().zeige(self.daten)
         ausgabe = puffer.getvalue()
         self.assertIn("STUDIEN-DASHBOARD", ausgabe)
-        self.assertIn("DLBCSEHSF_D", ausgabe)
-        self.assertIn("105 von 180 ECTS", ausgabe)
+        self.assertIn("DLBITIML", ausgabe)
+        self.assertIn("75 von 180 ECTS", ausgabe)
 
 
 if __name__ == "__main__":
@@ -123,8 +123,8 @@ class TestFristdarstellung(unittest.TestCase):
         ).lade_dashboard_daten(stichtag)
 
     def test_verstrichene_frist_wird_als_solche_benannt(self) -> None:
-        zeilen = {z.kuerzel: z.naechste_frist for z in self._daten(date(2026, 12, 1)).offene_module}
-        self.assertEqual(zeilen["DLBCSEHSF_D"], "Klausur 12.09.2026 verstrichen")
+        zeilen = {z.kuerzel: z.naechste_frist for z in self._daten(date(2027, 3, 1)).offene_module}
+        self.assertEqual(zeilen["DLBITIML"], "Klausur 10.10.2026 verstrichen")
         self.assertNotIn("kein Termin hinterlegt", zeilen.values())
 
     def test_art_und_datum_gehoeren_zusammen(self) -> None:
@@ -134,7 +134,7 @@ class TestFristdarstellung(unittest.TestCase):
         modul = Modul("MEHR-01", "Modul mit zwei Leistungen", 5,
                       Modulstatus.IN_BEARBEITUNG, begonnen_am=date(2026, 6, 1))
         modul.verlange(Klausur("Klausur", date(2026, 12, 1), gewichtung=0.5))
-        modul.verlange(Portfolio("Portfolio", [date(2026, 9, 1)], gewichtung=0.5))
+        modul.verlange(Portfolio("Portfolio", [date(2026, 10, 1)], gewichtung=0.5))
         studiengang.semester_mit_nummer(5).belege(modul)
 
         daten = DashboardController(
@@ -145,7 +145,7 @@ class TestFristdarstellung(unittest.TestCase):
         ).lade_dashboard_daten(date(2026, 8, 18))
 
         zeile = next(z for z in daten.offene_module if z.kuerzel == "MEHR-01")
-        self.assertEqual(zeile.naechste_frist, "Portfolio 01.09.2026")
+        self.assertEqual(zeile.naechste_frist, "Portfolio 01.10.2026")
 
     def test_stichtag_vor_studienbeginn_bleibt_widerspruchsfrei(self) -> None:
         daten = self._daten(date(2024, 10, 15))

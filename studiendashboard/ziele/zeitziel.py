@@ -1,4 +1,4 @@
-"""Studienziel 1: Abschluss innerhalb der Regelstudienzeit."""
+"""Studienziel 1: Abschluss innerhalb der geplanten Studiendauer."""
 
 from __future__ import annotations
 
@@ -10,10 +10,12 @@ class Zeitziel(Studienziel):
     """Ueberwacht den Abstand zum Sollstand und die Abschlussprognose.
 
     Bewertet wird nicht die verstrichene Zeit, sondern die Abweichung der
-    bestandenen ECTS vom Sollstand am Stichtag.
+    bestandenen ECTS vom Sollstand am Stichtag. Die Zieldauer haengt am
+    gewaehlten Zeitmodell und wird deshalb im Ziel gespeichert, nicht
+    fest verdrahtet.
     """
 
-    def __init__(self, zielmonate: int = 36, toleranz_ects: float = 5.0) -> None:
+    def __init__(self, zielmonate: int = 48, toleranz_ects: float = 5.0) -> None:
         super().__init__(zielmonate, toleranz_ects)
 
     @property

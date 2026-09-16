@@ -110,8 +110,11 @@ class BurnUpDiagramm(tk.Canvas):
             self.create_line(self.RAND[0], y, self._x(gesamt_tage), y, fill=RASTER)
             self.create_text(self.RAND[0] - 8, y, text=str(ects), anchor="e",
                              font=("Helvetica", 8), fill=GRAU)
-        for monat in range(0, 37, 6):
-            tag = round(gesamt_tage * monat / 36)
+        # Die Achse richtet sich nach dem Zeitmodell: 36, 48 oder 72 Monate.
+        monate_gesamt = max(daten.geplante_dauer_monate, 1)
+        schritt = 6 if monate_gesamt <= 48 else 12
+        for monat in range(0, monate_gesamt + 1, schritt):
+            tag = round(gesamt_tage * monat / monate_gesamt)
             self.create_text(self._x(tag), self._y(0) + 14, text=f"M{monat}", anchor="n",
                              font=("Helvetica", 8), fill=GRAU)
 

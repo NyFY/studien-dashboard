@@ -9,13 +9,13 @@ Das Programm beantwortet drei Fragen auf einen Blick:
 
 | Ziel | Kennzahl | Ampel |
 |------|----------|-------|
-| Abschluss in 36 Monaten | Abweichung der bestandenen ECTS vom Sollstand, dazu die Abschlussprognose | gruen ab -5 ECTS, gelb bis -15, rot darunter |
+| Abschluss in 48 Monaten | Abweichung der bestandenen ECTS vom Sollstand, dazu die Abschlussprognose | grün ab -5 ECTS, gelb bis -15, rot darunter |
 | Abschlussnote 2,0 oder besser | ECTS-gewichteter Durchschnitt und der Schnitt, den die Restmodule höchstens haben dürfen | grün bis 2,0, gelb bis 2,2, rot darüber |
 | Höchstens drei Module gleichzeitig | Anzahl begonnener Module und Alter des ältesten | grün im Limit, gelb bei einem zu viel, rot ab zwei zu viel oder über 90 Tagen |
 
 ## Installation
 
-Voraussetzung ist **Python 3.10 oder neuer**, unter Windows ab Windows 8.1.
+Voraussetzung ist **Python 3.10 oder neuer**; Python 3.13 setzt Windows 10 oder neuer voraus.
 Weitere Bibliotheken werden nicht benötigt, alles kommt aus der
 Standardbibliothek.
 
@@ -35,7 +35,7 @@ sie mit einem Beispieldatensatz.
 ```bash
 python main.py                          # Fenster, Stichtag ist heute
 python main.py --konsole                # Ausgabe auf der Kommandozeile
-python main.py --stichtag 2026-08-18    # fester Bewertungsstichtag
+python main.py --stichtag 2026-09-16    # fester Bewertungsstichtag
 python main.py --im-speicher            # ohne Datenbankdatei, nichts wird gespeichert
 python main.py --zuruecksetzen          # Beispieldaten neu anlegen
 python main.py --zielnote 1.7 --wip-grenze 2   # überschreibt die gespeicherten Ziele
@@ -50,7 +50,7 @@ Alternativ: `python -m studiendashboard`
 python -m unittest discover -s tests -t .
 ```
 
-80 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
+92 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
 Rundlauf durch die Datenbank alle Daten erhält und ob die Ampeln an den
 Schwellenwerten richtig umschlagen.
 
@@ -73,8 +73,8 @@ lassen sich dort ändern, ohne den Code anzufassen.
 
 ## Aufbau
 
-Der Code folgt einem Schichtenmodell. Jede Schicht kennt nur die Schicht
-unter sich, nie umgekehrt.
+Der Code folgt einem Schichtenmodell. Die Abhaengigkeiten zeigen nur in eine
+Richtung: Keine Schicht kennt eine Schicht ueber sich.
 
 ```
 studiendashboard/
@@ -86,7 +86,7 @@ studiendashboard/
   service/          fachliche Berechnungen ueber mehrere Objekte hinweg
   repository/       Speicherung (SQLite und Arbeitsspeicher) sowie Beispieldaten
   domain/           Fachklassen: Studiengang, Semester, Modul, Pruefungsleistung, Versuch, Note
-tests/              80 Tests mit unittest
+tests/              92 Tests mit unittest
 ```
 
 Umgesetzte objektorientierte Konzepte:

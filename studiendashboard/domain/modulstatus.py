@@ -8,9 +8,9 @@ from enum import Enum
 class Modulstatus(Enum):
     """Bearbeitungsstand eines Moduls.
 
-    Die Aufzaehlung traegt bewusst etwas fachliche Logik: Ob ein Status als
-    offen zaehlt, entscheidet ueber das dritte Studienziel und soll deshalb
-    an genau einer Stelle stehen.
+    Die Aufzaehlung traegt bewusst etwas fachliche Logik. Beide Regeln, die
+    am Status haengen, stehen damit an genau einer Stelle: ob ein Modul noch
+    offen ist und ob es Aufmerksamkeit bindet.
     """
 
     OFFEN = "offen"

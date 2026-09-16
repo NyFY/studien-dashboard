@@ -31,7 +31,7 @@ class TestSpeicherRepository(unittest.TestCase):
         repository = SpeicherStudiengangRepository()
         repository.speichere(erzeuge_beispielstudiengang())
         self.assertFalse(repository.ist_leer())
-        self.assertEqual(repository.lade().erreichte_ects, 105)
+        self.assertEqual(repository.lade().erreichte_ects, 75)
 
 
 class TestSQLiteRepository(unittest.TestCase):
@@ -78,7 +78,7 @@ class TestSQLiteRepository(unittest.TestCase):
             for leistung in modul.pruefungsleistungen
         )
         self.assertEqual(portfolio.anzahl_phasen, 3)
-        self.assertEqual(portfolio.naechste_frist(date(2026, 8, 18)), date(2026, 8, 25))
+        self.assertEqual(portfolio.naechste_frist(date(2026, 9, 16)), date(2026, 9, 22))
 
     def test_komposition_wird_in_der_datenbank_durchgesetzt(self) -> None:
         """Mit dem Modul verschwinden Pruefungsleistung und Versuch (ON DELETE CASCADE)."""
@@ -88,10 +88,10 @@ class TestSQLiteRepository(unittest.TestCase):
         with sqlite3.connect(self.pfad) as verbindung:
             verbindung.execute("PRAGMA foreign_keys = ON")
             (vorher,) = verbindung.execute("SELECT COUNT(*) FROM versuch").fetchone()
-            verbindung.execute("DELETE FROM modul WHERE kuerzel = 'DLBISIC2'")
+            verbindung.execute("DELETE FROM modul WHERE kuerzel = 'DLBIBRVS'")
             (nachher,) = verbindung.execute("SELECT COUNT(*) FROM versuch").fetchone()
             (leistungen,) = verbindung.execute(
-                "SELECT COUNT(*) FROM pruefungsleistung WHERE modul_kuerzel = 'DLBISIC2'"
+                "SELECT COUNT(*) FROM pruefungsleistung WHERE modul_kuerzel = 'DLBIBRVS'"
             ).fetchone()
 
         self.assertEqual(vorher - nachher, 1)
@@ -124,7 +124,7 @@ class TestSQLiteRepository(unittest.TestCase):
         geladen = SQLiteStudiengangRepository(self.pfad).lade()
         kuerzel = {m.kuerzel for m in geladen.module}
         self.assertIn("NEU-01", kuerzel)
-        self.assertEqual(geladen.erreichte_ects, 110)
+        self.assertEqual(geladen.erreichte_ects, 80)
 
 
 class TestZielpersistenz(unittest.TestCase):
@@ -143,11 +143,11 @@ class TestZielpersistenz(unittest.TestCase):
         repository = SQLiteStudiengangRepository(self.pfad)
         self.assertEqual(repository.lade_ziele(), [])
 
-        repository.speichere_ziele(standardziele(36))
+        repository.speichere_ziele(standardziele(48))
         geladen = SQLiteStudiengangRepository(self.pfad).lade_ziele()
 
         self.assertEqual([type(z) for z in geladen], [Zeitziel, Notenziel, WipZiel])
-        self.assertEqual(geladen[0].zielmonate, 36)
+        self.assertEqual(geladen[0].zielmonate, 48)
         self.assertEqual(geladen[1].zielnote, 2.0)
         self.assertEqual(geladen[2].hoechstzahl, 3)
         self.assertEqual(geladen[2].hoechstalter_tage, 90)
@@ -164,7 +164,7 @@ class TestZielpersistenz(unittest.TestCase):
     def test_deaktiviertes_ziel_bleibt_deaktiviert(self) -> None:
         from studiendashboard.ziele import standardziele
 
-        ziele = standardziele(36)
+        ziele = standardziele(48)
         ziele[1].ist_aktiv = False
         repository = SQLiteStudiengangRepository(self.pfad)
         repository.speichere_ziele(ziele)
@@ -175,8 +175,8 @@ class TestZielpersistenz(unittest.TestCase):
         from studiendashboard.ziele import standardziele
 
         repository = SQLiteStudiengangRepository(self.pfad)
-        repository.speichere_ziele(standardziele(36))
-        repository.speichere_ziele(standardziele(36))
+        repository.speichere_ziele(standardziele(48))
+        repository.speichere_ziele(standardziele(48))
         self.assertEqual(len(repository.lade_ziele()), 3)
 
 

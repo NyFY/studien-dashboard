@@ -55,6 +55,7 @@ class DashboardController:
             abschluss=studiengang.abschluss,
             studienbeginn=studiengang.studienbeginn,
             zieldatum=studiengang.zieldatum,
+            geplante_dauer_monate=studiengang.geplante_dauer_monate,
             stichtag=stichtag,
             kennzahlen=kennzahlen,
             bewertungen=bewertungen,

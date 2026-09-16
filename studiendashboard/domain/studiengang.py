@@ -38,27 +38,28 @@ class Studiengang:
         bezeichnung: str,
         abschluss: str,
         gesamt_ects: int,
-        regelstudienzeit_monate: int,
+        geplante_dauer_monate: int,
         studienbeginn: date,
         anzahl_semester: int = 6,
     ) -> None:
         if gesamt_ects <= 0:
             raise ValueError("Ein Studiengang braucht mindestens einen ECTS-Punkt")
-        if regelstudienzeit_monate <= 0:
-            raise ValueError("Die Regelstudienzeit muss groesser als null sein")
+        if geplante_dauer_monate <= 0:
+            raise ValueError("Die geplante Studiendauer muss groesser als null sein")
         if anzahl_semester <= 0:
             raise ValueError("Ein Studiengang braucht mindestens ein Semester")
 
         self.bezeichnung = bezeichnung
         self.abschluss = abschluss
         self.gesamt_ects = gesamt_ects
-        self.regelstudienzeit_monate = regelstudienzeit_monate
+        self.geplante_dauer_monate = geplante_dauer_monate
         self.studienbeginn = studienbeginn
 
-        # Die Semestergrenzen werden gleichmaessig verteilt; das letzte
-        # Semester endet genau mit der Regelstudienzeit.
+        # Die Semestergrenzen werden gleichmaessig ueber die geplante Dauer
+        # verteilt. Bei Teilzeit I dauert ein Semester acht statt sechs Monate,
+        # der Lehrplan bleibt derselbe.
         def grenze(nummer: int) -> date:
-            monate = round(regelstudienzeit_monate * nummer / anzahl_semester)
+            monate = round(geplante_dauer_monate * nummer / anzahl_semester)
             return addiere_monate(studienbeginn, monate)
 
         self._semester: tuple[Semester, ...] = tuple(
@@ -160,15 +161,17 @@ class Studiengang:
 
     @property
     def zieldatum(self) -> date:
-        """Letzter Tag der Regelstudienzeit.
+        """Letzter Tag der geplanten Studiendauer.
 
-        Bei Studienbeginn am 01.10.2024 und 36 Monaten Regelstudienzeit ist
-        das der 30.09.2027, also der Tag vor dem Monatswechsel.
+        Die Dauer haengt vom gewaehlten Zeitmodell ab: 36 Monate in Vollzeit,
+        48 in Teilzeit I, 72 in Teilzeit II. Bei Studienbeginn am 01.10.2024
+        und 48 Monaten ist das der 30.09.2028, also der Tag vor dem
+        Monatswechsel.
         """
-        return addiere_monate(self.studienbeginn, self.regelstudienzeit_monate) - timedelta(days=1)
+        return addiere_monate(self.studienbeginn, self.geplante_dauer_monate) - timedelta(days=1)
 
     @property
-    def tage_regelstudienzeit(self) -> int:
+    def tage_geplante_dauer(self) -> int:
         """Anzahl Tage zwischen Studienbeginn und Zieldatum."""
         return (self.zieldatum - self.studienbeginn).days
 

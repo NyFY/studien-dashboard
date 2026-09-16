@@ -129,7 +129,7 @@ class TestModul(unittest.TestCase):
 class TestSemesterUndStudiengang(unittest.TestCase):
     def setUp(self) -> None:
         self.studiengang = Studiengang(
-            "B.Sc. Test", "Bachelor of Science", 180, 36, date(2024, 10, 1)
+            "B.Sc. Test", "Bachelor of Science", 180, 48, date(2024, 10, 1)
         )
 
     def test_komposition_semester_wird_selbst_erzeugt(self) -> None:
@@ -137,8 +137,18 @@ class TestSemesterUndStudiengang(unittest.TestCase):
         self.assertIsInstance(self.studiengang.semester, tuple)
 
     def test_zieldatum_und_dauer(self) -> None:
-        self.assertEqual(self.studiengang.zieldatum, date(2027, 9, 30))
-        self.assertEqual(self.studiengang.tage_regelstudienzeit, 1094)
+        """Teilzeit I: 48 Monate ab dem 01.10.2024 enden am 30.09.2028."""
+        self.assertEqual(self.studiengang.zieldatum, date(2028, 9, 30))
+        self.assertEqual(self.studiengang.tage_geplante_dauer, 1460)
+
+    def test_zeitmodelle_ergeben_verschiedene_zieldaten(self) -> None:
+        """Vollzeit, Teilzeit I und Teilzeit II unterscheiden sich nur in der Dauer."""
+        beginn = date(2024, 10, 1)
+        erwartet = {36: date(2027, 9, 30), 48: date(2028, 9, 30), 72: date(2030, 9, 30)}
+        for monate, zieldatum in erwartet.items():
+            with self.subTest(monate=monate):
+                sg = Studiengang("Test", "B.Sc.", 180, monate, beginn)
+                self.assertEqual(sg.zieldatum, zieldatum)
 
     def test_aggregation_modul_ueberlebt_das_semester(self) -> None:
         modul = Modul("TEST", "Testmodul", 5)
@@ -157,7 +167,7 @@ class TestSemesterUndStudiengang(unittest.TestCase):
 
     def test_addiere_monate_kuerzt_auf_monatsende(self) -> None:
         self.assertEqual(addiere_monate(date(2026, 1, 31), 1), date(2026, 2, 28))
-        self.assertEqual(addiere_monate(date(2024, 10, 1), 36), date(2027, 10, 1))
+        self.assertEqual(addiere_monate(date(2024, 10, 1), 48), date(2028, 10, 1))
 
 
 if __name__ == "__main__":
@@ -173,7 +183,7 @@ class TestStichtagsbezug(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.studiengang = Studiengang("B.Sc. Test", "B.Sc.", 180, 36, date(2024, 10, 1))
+        self.studiengang = Studiengang("B.Sc. Test", "B.Sc.", 180, 48, date(2024, 10, 1))
         for kuerzel, tag in (("A", date(2025, 3, 1)), ("B", date(2026, 3, 1))):
             modul = Modul(kuerzel, f"Modul {kuerzel}", 5, Modulstatus.BESTANDEN)
             klausur = Klausur("Klausur", tag)
@@ -201,7 +211,7 @@ class TestStichtagsbezug(unittest.TestCase):
 
 class TestRobustheit(unittest.TestCase):
     def test_studiengang_prueft_seine_eckdaten(self) -> None:
-        for ects, monate, semester in ((0, 36, 6), (180, 0, 6), (180, 36, 0)):
+        for ects, monate, semester in ((0, 48, 6), (180, 0, 6), (180, 48, 0)):
             with self.subTest(ects=ects, monate=monate, semester=semester):
                 with self.assertRaises(ValueError):
                     Studiengang("Test", "B.Sc.", ects, monate, date(2024, 10, 1), semester)

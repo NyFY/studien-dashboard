@@ -54,11 +54,11 @@ class DashboardApp:
         if repository.ist_leer():
             studiengang = erzeuge_beispielstudiengang()
             repository.speichere(studiengang)
-            repository.speichere_ziele(standardziele(studiengang.regelstudienzeit_monate))
+            repository.speichere_ziele(standardziele(studiengang.geplante_dauer_monate))
         return repository
 
     def erzeuge_ziele(
-        self, repository: StudiengangRepository, regelstudienzeit_monate: int
+        self, repository: StudiengangRepository, geplante_dauer_monate: int
     ) -> list[Studienziel]:
         """Laedt die gespeicherten Studienziele.
 
@@ -68,7 +68,7 @@ class DashboardApp:
         """
         ziele = repository.lade_ziele()
         if not ziele:
-            ziele = standardziele(regelstudienzeit_monate)
+            ziele = standardziele(geplante_dauer_monate)
             repository.speichere_ziele(ziele)
 
         for ziel in ziele:
@@ -117,7 +117,7 @@ class DashboardApp:
         """Startet das Dashboard."""
         repository = self.erzeuge_repository(zuruecksetzen)
         studiengang = repository.lade()
-        ziele = self.erzeuge_ziele(repository, studiengang.regelstudienzeit_monate)
+        ziele = self.erzeuge_ziele(repository, studiengang.geplante_dauer_monate)
         notenziel = next((z for z in ziele if z.art == "notenziel"), None)
         controller = DashboardController(
             repository=repository,

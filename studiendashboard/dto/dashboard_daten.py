@@ -70,6 +70,7 @@ class DashboardDaten:
     abschluss: str
     studienbeginn: date
     zieldatum: date
+    geplante_dauer_monate: int
     stichtag: date
     kennzahlen: Kennzahlen
     bewertungen: tuple[Zielbewertung, ...]

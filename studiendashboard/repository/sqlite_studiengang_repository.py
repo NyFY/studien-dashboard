@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS studiengang (
     bezeichnung             TEXT    NOT NULL,
     abschluss               TEXT    NOT NULL,
     gesamt_ects             INTEGER NOT NULL,
-    regelstudienzeit_monate INTEGER NOT NULL,
+    geplante_dauer_monate INTEGER NOT NULL,
     studienbeginn           TEXT    NOT NULL,
     anzahl_semester         INTEGER NOT NULL
 );
@@ -119,7 +119,7 @@ class SQLiteStudiengangRepository(StudiengangRepository):
                 bezeichnung=kopf["bezeichnung"],
                 abschluss=kopf["abschluss"],
                 gesamt_ects=kopf["gesamt_ects"],
-                regelstudienzeit_monate=kopf["regelstudienzeit_monate"],
+                geplante_dauer_monate=kopf["geplante_dauer_monate"],
                 studienbeginn=date.fromisoformat(kopf["studienbeginn"]),
                 anzahl_semester=kopf["anzahl_semester"],
             )
@@ -259,7 +259,7 @@ class SQLiteStudiengangRepository(StudiengangRepository):
                     studiengang.bezeichnung,
                     studiengang.abschluss,
                     studiengang.gesamt_ects,
-                    studiengang.regelstudienzeit_monate,
+                    studiengang.geplante_dauer_monate,
                     studiengang.studienbeginn.isoformat(),
                     len(studiengang.semester),
                 ),

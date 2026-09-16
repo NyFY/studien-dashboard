@@ -16,10 +16,10 @@ from studiendashboard.ziele import Ampel, Notenziel, Studienziel, WipZiel, Zeitz
 def kennzahlen(**abweichungen) -> Kennzahlen:
     """Baut einen Kennzahlensatz mit sinnvollen Vorgabewerten."""
     vorgabe = dict(
-        ects_ist=105, ects_soll=112.9, ects_gesamt=180,
-        notendurchschnitt=1.84, benoetigter_restschnitt=2.22,
-        offene_module=4, aeltestes_modul_tage=96, aeltestes_modul_kuerzel="DLBCSEHSF_D",
-        prognose_datum=date(2027, 12, 21), zieldatum=date(2027, 9, 30), tage_verzug=82,
+        ects_ist=75, ects_soll=88.2, ects_gesamt=180,
+        notendurchschnitt=1.80, benoetigter_restschnitt=2.14,
+        offene_module=4, aeltestes_modul_tage=96, aeltestes_modul_kuerzel="DLBITIML",
+        prognose_datum=date(2029, 6, 13), zieldatum=date(2028, 9, 30), tage_verzug=256,
     )
     vorgabe.update(abweichungen)
     return Kennzahlen(**vorgabe)      # type: ignore[arg-type]
@@ -28,18 +28,18 @@ def kennzahlen(**abweichungen) -> Kennzahlen:
 class TestZeitziel(unittest.TestCase):
     def test_gruen_bei_geringem_rueckstand(self) -> None:
         ziel = Zeitziel()
-        self.assertEqual(ziel.bewerte(kennzahlen(ects_ist=110)).ampel, Ampel.GRUEN)
+        self.assertEqual(ziel.bewerte(kennzahlen(ects_ist=85)).ampel, Ampel.GRUEN)
 
     def test_gelb_bei_mittlerem_rueckstand(self) -> None:
         self.assertEqual(Zeitziel().bewerte(kennzahlen()).ampel, Ampel.GELB)
 
     def test_rot_bei_grossem_rueckstand(self) -> None:
-        self.assertEqual(Zeitziel().bewerte(kennzahlen(ects_ist=90)).ampel, Ampel.ROT)
+        self.assertEqual(Zeitziel().bewerte(kennzahlen(ects_ist=60)).ampel, Ampel.ROT)
 
     def test_hinweis_nennt_prognose_und_verzug(self) -> None:
         hinweis = Zeitziel().bewerte(kennzahlen()).hinweis
-        self.assertIn("21.12.2027", hinweis)
-        self.assertIn("82", hinweis)
+        self.assertIn("13.06.2029", hinweis)
+        self.assertIn("256", hinweis)
         self.assertIn("Rückstand", hinweis)
 
 
@@ -112,7 +112,7 @@ class TestZielwerteUndSpeicherung(unittest.TestCase):
     def test_werte_ueberleben_den_umweg_ueber_die_fabrik(self) -> None:
         from studiendashboard.ziele import erzeuge_ziel, standardziele
 
-        for original in standardziele(36):
+        for original in standardziele(48):
             kopie = erzeuge_ziel(
                 original.art, original.zielwert, original.toleranz, original.ist_aktiv
             )
@@ -144,7 +144,7 @@ class TestErweiterbarkeit(unittest.TestCase):
             def bewerte(self, k: Kennzahlen) -> "Zielbewertung":  # type: ignore[name-defined]
                 from studiendashboard.ziele import Zielbewertung
 
-                tempo = k.ects_ist / 22.5
+                tempo = k.ects_ist / 23.5
                 return Zielbewertung(
                     titel=self.titel, kennwert=f"{tempo:.1f}", zusatz="ECTS je Monat",
                     hinweis="Testziel", ampel=Ampel.GRUEN if tempo >= self.zielwert else Ampel.ROT,
