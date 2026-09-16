@@ -1,0 +1,167 @@
+"""Tests der Zielbewertung.
+
+Die Ziele arbeiten ausschliesslich auf Kennzahlen. Deshalb laesst sich hier
+ohne Datenbank und ohne Objektgeflecht pruefen, ob die Ampeln stimmen.
+"""
+
+from __future__ import annotations
+
+import unittest
+from datetime import date
+
+from studiendashboard.dto import Kennzahlen
+from studiendashboard.ziele import Ampel, Notenziel, Studienziel, WipZiel, Zeitziel
+
+
+def kennzahlen(**abweichungen) -> Kennzahlen:
+    """Baut einen Kennzahlensatz mit sinnvollen Vorgabewerten."""
+    vorgabe = dict(
+        ects_ist=105, ects_soll=112.9, ects_gesamt=180,
+        notendurchschnitt=1.84, benoetigter_restschnitt=2.22,
+        offene_module=4, aeltestes_modul_tage=96, aeltestes_modul_kuerzel="DLBCSEHSF_D",
+        prognose_datum=date(2027, 12, 21), zieldatum=date(2027, 9, 30), tage_verzug=82,
+    )
+    vorgabe.update(abweichungen)
+    return Kennzahlen(**vorgabe)      # type: ignore[arg-type]
+
+
+class TestZeitziel(unittest.TestCase):
+    def test_gruen_bei_geringem_rueckstand(self) -> None:
+        ziel = Zeitziel()
+        self.assertEqual(ziel.bewerte(kennzahlen(ects_ist=110)).ampel, Ampel.GRUEN)
+
+    def test_gelb_bei_mittlerem_rueckstand(self) -> None:
+        self.assertEqual(Zeitziel().bewerte(kennzahlen()).ampel, Ampel.GELB)
+
+    def test_rot_bei_grossem_rueckstand(self) -> None:
+        self.assertEqual(Zeitziel().bewerte(kennzahlen(ects_ist=90)).ampel, Ampel.ROT)
+
+    def test_hinweis_nennt_prognose_und_verzug(self) -> None:
+        hinweis = Zeitziel().bewerte(kennzahlen()).hinweis
+        self.assertIn("21.12.2027", hinweis)
+        self.assertIn("82", hinweis)
+        self.assertIn("Rückstand", hinweis)
+
+
+class TestNotenziel(unittest.TestCase):
+    def test_gruen_wenn_ziel_eingehalten(self) -> None:
+        self.assertEqual(Notenziel(2.0).bewerte(kennzahlen()).ampel, Ampel.GRUEN)
+
+    def test_gelb_innerhalb_der_toleranz(self) -> None:
+        self.assertEqual(
+            Notenziel(2.0).bewerte(kennzahlen(notendurchschnitt=2.15)).ampel, Ampel.GELB
+        )
+
+    def test_rot_ausserhalb_der_toleranz(self) -> None:
+        self.assertEqual(
+            Notenziel(2.0).bewerte(kennzahlen(notendurchschnitt=2.5)).ampel, Ampel.ROT
+        )
+
+    def test_ohne_note_gelb_und_hinweis(self) -> None:
+        bewertung = Notenziel().bewerte(kennzahlen(notendurchschnitt=None))
+        self.assertEqual(bewertung.ampel, Ampel.GELB)
+        self.assertEqual(bewertung.kennwert, "-")
+
+    def test_unerreichbares_ziel_wird_benannt(self) -> None:
+        hinweis = Notenziel(2.0).bewerte(kennzahlen(benoetigter_restschnitt=0.6)).hinweis
+        self.assertIn("nicht mehr erreichbar", hinweis)
+
+
+class TestWipZiel(unittest.TestCase):
+    def test_gruen_im_limit(self) -> None:
+        bewertung = WipZiel(3).bewerte(kennzahlen(offene_module=3, aeltestes_modul_tage=20))
+        self.assertEqual(bewertung.ampel, Ampel.GRUEN)
+
+    def test_gelb_bei_einem_modul_zu_viel(self) -> None:
+        bewertung = WipZiel(3).bewerte(kennzahlen(offene_module=4, aeltestes_modul_tage=20))
+        self.assertEqual(bewertung.ampel, Ampel.GELB)
+
+    def test_rot_bei_zu_altem_modul(self) -> None:
+        self.assertEqual(WipZiel(3).bewerte(kennzahlen()).ampel, Ampel.ROT)
+
+    def test_rot_bei_deutlicher_ueberschreitung(self) -> None:
+        bewertung = WipZiel(3).bewerte(kennzahlen(offene_module=5, aeltestes_modul_tage=10))
+        self.assertEqual(bewertung.ampel, Ampel.ROT)
+
+
+class TestZielwerteUndSpeicherung(unittest.TestCase):
+    """Die Ziele tragen ihre Schwellenwerte selbst, damit sie speicherbar sind."""
+
+    def test_titel_folgt_dem_zielwert(self) -> None:
+        ziel = Notenziel(zielnote=2.0)
+        self.assertEqual(ziel.titel, "Abschlussnote 2,0 oder besser")
+        ziel.zielwert = 1.7
+        self.assertEqual(ziel.titel, "Abschlussnote 1,7 oder besser")
+
+    def test_zielart_ist_der_speicherschluessel(self) -> None:
+        self.assertEqual(Zeitziel().art, "zeitziel")
+        self.assertEqual(Notenziel().art, "notenziel")
+        self.assertEqual(WipZiel().art, "wipziel")
+
+    def test_fabrik_erzeugt_die_richtige_unterklasse(self) -> None:
+        from studiendashboard.ziele import erzeuge_ziel
+
+        self.assertIsInstance(erzeuge_ziel("zeitziel", 36, 5, True), Zeitziel)
+        self.assertIsInstance(erzeuge_ziel("notenziel", 2.0, 0.2, True), Notenziel)
+        wip = erzeuge_ziel("wipziel", 3, 90, False)
+        self.assertIsInstance(wip, WipZiel)
+        self.assertFalse(wip.ist_aktiv)
+        with self.assertRaises(ValueError):
+            erzeuge_ziel("unbekannt", 1, 1, True)
+
+    def test_werte_ueberleben_den_umweg_ueber_die_fabrik(self) -> None:
+        from studiendashboard.ziele import erzeuge_ziel, standardziele
+
+        for original in standardziele(36):
+            kopie = erzeuge_ziel(
+                original.art, original.zielwert, original.toleranz, original.ist_aktiv
+            )
+            with self.subTest(art=original.art):
+                self.assertEqual(type(kopie), type(original))
+                self.assertEqual(kopie.zielwert, original.zielwert)
+                self.assertEqual(kopie.toleranz, original.toleranz)
+                self.assertEqual(kopie.titel, original.titel)
+
+    def test_ohne_startdatum_kein_falsches_alter(self) -> None:
+        bewertung = WipZiel(3).bewerte(
+            kennzahlen(offene_module=2, aeltestes_modul_tage=0, aeltestes_modul_kuerzel=None)
+        )
+        self.assertIn("ohne hinterlegtes Startdatum", bewertung.hinweis)
+
+
+class TestErweiterbarkeit(unittest.TestCase):
+    """Belegt das Open-Closed-Prinzip: ein neues Ziel aendert nichts Bestehendes."""
+
+    def test_neues_ziel_fuegt_sich_ein(self) -> None:
+        class EctsProMonatZiel(Studienziel):
+            def __init__(self, mindesttempo: float = 5.0) -> None:
+                super().__init__(zielwert=mindesttempo, toleranz=0.0)
+
+            @property
+            def titel(self) -> str:
+                return f"Mindestens {self.zielwert:.0f} ECTS je Monat"
+
+            def bewerte(self, k: Kennzahlen) -> "Zielbewertung":  # type: ignore[name-defined]
+                from studiendashboard.ziele import Zielbewertung
+
+                tempo = k.ects_ist / 22.5
+                return Zielbewertung(
+                    titel=self.titel, kennwert=f"{tempo:.1f}", zusatz="ECTS je Monat",
+                    hinweis="Testziel", ampel=Ampel.GRUEN if tempo >= self.zielwert else Ampel.ROT,
+                )
+
+        alle: list[Studienziel] = [Zeitziel(), Notenziel(), WipZiel(), EctsProMonatZiel()]
+        ampeln = [ziel.bewerte(kennzahlen()).ampel for ziel in alle]
+        self.assertEqual(len(ampeln), 4)
+        self.assertEqual(ampeln[3], Ampel.ROT)
+
+    def test_unvollstaendiges_ziel_wird_abgelehnt(self) -> None:
+        class Unvollstaendig(Studienziel):
+            pass
+
+        with self.assertRaises(TypeError):
+            Unvollstaendig(1.0, 0.0)     # type: ignore[abstract]
+
+
+if __name__ == "__main__":
+    unittest.main()

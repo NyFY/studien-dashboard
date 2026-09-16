@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+
+# Daten des Dashboards
+daten/
+*.db
+
+# Editoren und Betriebssysteme
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
