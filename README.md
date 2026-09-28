@@ -50,7 +50,7 @@ Alternativ: `python -m studiendashboard`
 python -m unittest discover -s tests -t .
 ```
 
-103 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
+106 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
 Rundlauf durch die Datenbank alle Daten erhält und ob die Ampeln an den
 Schwellenwerten richtig umschlagen.
 
@@ -86,7 +86,7 @@ studiendashboard/
   service/          fachliche Berechnungen ueber mehrere Objekte hinweg
   repository/       Speicherung (SQLite und Arbeitsspeicher) sowie Beispieldaten
   domain/           Fachklassen: Studiengang, Semester, Modul, Pruefungsleistung, Versuch, Note
-tests/              103 Tests mit unittest
+tests/              106 Tests mit unittest
 ```
 
 Umgesetzte objektorientierte Konzepte:

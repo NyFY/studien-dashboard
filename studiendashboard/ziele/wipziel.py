@@ -31,7 +31,7 @@ class WipZiel(Studienziel):
 
     def bewerte(self, kennzahlen: Kennzahlen) -> Zielbewertung:
         anzahl = kennzahlen.offene_module
-        alter = kennzahlen.aeltestes_modul_tage
+        alter = self.alter_aeltestes_modul(kennzahlen)
 
         if anzahl > self.hoechstzahl + 1 or alter > self.hoechstalter_tage:
             ampel = Ampel.ROT

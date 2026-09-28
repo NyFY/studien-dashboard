@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS modul (
     ects            INTEGER NOT NULL,
     status          TEXT    NOT NULL,
     begonnen_am     TEXT,
-    semester_nummer INTEGER NOT NULL
+    -- Multiplizitaet 0..1 aus dem Klassendiagramm: Ein Modul aus dem
+    -- Modulhandbuch darf noch keinem Semester zugeordnet sein.
+    semester_nummer INTEGER
 );
 
 -- ON DELETE CASCADE bildet die Komposition aus dem Klassendiagramm ab:

@@ -42,7 +42,7 @@ class Notenziel(Studienziel):
         else:
             ampel = Ampel.ROT
 
-        rest = kennzahlen.benoetigter_restschnitt
+        rest = self.hoechster_restschnitt(kennzahlen)
         if rest is None:
             hinweis = "Alle Module sind bewertet."
         elif rest >= 4.0:
@@ -71,8 +71,9 @@ class Notenziel(Studienziel):
         noch geht.
 
         Returns:
-            Der hoechste zulaessige Restschnitt, oder None, wenn keine Module
-            mehr offen sind oder das Ziel rechnerisch nicht mehr erreichbar
-            ist.
+            Der hoechste zulaessige Restschnitt, oder None, wenn keine
+            Module mehr offen sind. Liegt der Wert unter 1,0, ist das Ziel
+            rechnerisch nicht mehr erreichbar; die Bewertung macht daraus
+            einen eigenen Hinweis.
         """
         return kennzahlen.benoetigter_restschnitt

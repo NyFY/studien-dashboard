@@ -47,15 +47,16 @@ class Zeitziel(Studienziel):
         else:
             lage = f"{abs(abweichung):.1f}".replace(".", ",") + " ECTS Rückstand"
 
-        if kennzahlen.prognose_datum is None:
+        prognose = self.prognostiziertes_ende(kennzahlen)
+        if prognose is None:
             hinweis = f"{lage}, Prognose noch nicht möglich"
         elif kennzahlen.tage_verzug > 0:
             hinweis = (
-                f"{lage}, Prognose {kennzahlen.prognose_datum:%d.%m.%Y} "
+                f"{lage}, Prognose {prognose:%d.%m.%Y} "
                 f"({kennzahlen.tage_verzug} Tage nach Ziel)"
             )
         else:
-            hinweis = f"{lage}, Prognose {kennzahlen.prognose_datum:%d.%m.%Y} (im Ziel)"
+            hinweis = f"{lage}, Prognose {prognose:%d.%m.%Y} (im Ziel)"
 
         return Zielbewertung(
             titel=self.titel,

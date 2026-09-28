@@ -185,5 +185,46 @@ class TestFachlicheAusgaben(unittest.TestCase):
         self.assertEqual(WipZiel().alter_aeltestes_modul(kennzahlen()), 96)
 
 
+class TestSchwellenwerteSindTrennscharf(unittest.TestCase):
+    """Die Grenzwerte selbst gehoeren zur besseren Stufe.
+
+    Genau an diesen Punkten war die Beschreibung in Phase 1 zunaechst
+    mehrdeutig. Die Tests halten die Auslegung fest.
+    """
+
+    def test_zeitziel_an_den_grenzen(self) -> None:
+        faelle = [
+            (80.0, Ampel.GRUEN),      # Abweichung genau -5
+            (80.1, Ampel.GELB),       # knapp schlechter als -5
+            (90.0, Ampel.GELB),       # Abweichung genau -15
+            (90.1, Ampel.ROT),        # knapp schlechter als -15
+        ]
+        for soll, erwartet in faelle:
+            with self.subTest(ects_soll=soll):
+                bewertung = Zeitziel().bewerte(kennzahlen(ects_ist=75, ects_soll=soll))
+                self.assertEqual(bewertung.ampel, erwartet)
+
+    def test_notenziel_an_den_grenzen(self) -> None:
+        faelle = [(2.0, Ampel.GRUEN), (2.1, Ampel.GELB), (2.2, Ampel.GELB), (2.3, Ampel.ROT)]
+        for schnitt, erwartet in faelle:
+            with self.subTest(schnitt=schnitt):
+                bewertung = Notenziel().bewerte(kennzahlen(notendurchschnitt=schnitt))
+                self.assertEqual(bewertung.ampel, erwartet)
+
+    def test_wipziel_an_den_grenzen(self) -> None:
+        faelle = [
+            (3, 90, Ampel.GRUEN),     # im Limit, Alter genau an der Grenze
+            (3, 91, Ampel.ROT),       # ein Tag darueber
+            (4, 90, Ampel.GELB),      # eins zu viel, Alter noch im Rahmen
+            (5, 90, Ampel.ROT),       # zwei zu viel
+        ]
+        for anzahl, alter, erwartet in faelle:
+            with self.subTest(offene_module=anzahl, alter=alter):
+                bewertung = WipZiel().bewerte(
+                    kennzahlen(offene_module=anzahl, aeltestes_modul_tage=alter)
+                )
+                self.assertEqual(bewertung.ampel, erwartet)
+
+
 if __name__ == "__main__":
     unittest.main()
