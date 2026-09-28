@@ -133,8 +133,8 @@ class TestFristdarstellung(unittest.TestCase):
         studiengang = erzeuge_beispielstudiengang()
         modul = Modul("MEHR-01", "Modul mit zwei Leistungen", 5,
                       Modulstatus.IN_BEARBEITUNG, begonnen_am=date(2026, 6, 1))
-        modul.verlange(Klausur("Klausur", date(2026, 12, 1), gewichtung=0.5))
-        modul.verlange(Portfolio("Portfolio", [date(2026, 10, 1)], gewichtung=0.5))
+        modul.verlange(Klausur(date(2026, 12, 1), gewichtung=0.5))
+        modul.verlange(Portfolio([date(2026, 10, 1)], gewichtung=0.5))
         studiengang.semester_mit_nummer(5).belege(modul)
 
         daten = DashboardController(

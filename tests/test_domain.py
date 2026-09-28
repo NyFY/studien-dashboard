@@ -7,8 +7,8 @@ from dataclasses import FrozenInstanceError
 from datetime import date
 
 from studiendashboard.domain import (
-    Fallstudie, Klausur, Modul, Modulstatus, Note, Portfolio, Semester,
-    Studiengang, Versuch, addiere_monate,
+    Abschluss, Fallstudie, Klausur, Modul, Modulstatus, Note, Portfolio,
+    Semester, Studiengang, Versuch, addiere_monate,
 )
 
 
@@ -63,14 +63,12 @@ class TestPruefungsleistung(unittest.TestCase):
             Pruefungsleistung("Test")      # type: ignore[abstract]
 
     def test_klausur_liefert_termin_als_frist(self) -> None:
-        klausur = Klausur("Klausur", pruefungstermin=date(2026, 9, 12))
+        klausur = Klausur(pruefungstermin=date(2026, 9, 12))
         self.assertEqual(klausur.naechste_frist(date(2026, 8, 18)), date(2026, 9, 12))
         self.assertIsNone(klausur.naechste_frist(date(2026, 10, 1)))
 
     def test_portfolio_liefert_naechste_offene_phase(self) -> None:
-        portfolio = Portfolio(
-            "Portfolio",
-            phasenfristen=[date(2026, 8, 25), date(2026, 10, 6), date(2026, 11, 24)],
+        portfolio = Portfolio(phasenfristen=[date(2026, 8, 25), date(2026, 10, 6), date(2026, 11, 24)],
         )
         self.assertEqual(portfolio.naechste_frist(date(2026, 8, 18)), date(2026, 8, 25))
         self.assertEqual(portfolio.naechste_frist(date(2026, 9, 1)), date(2026, 10, 6))
@@ -79,22 +77,22 @@ class TestPruefungsleistung(unittest.TestCase):
     def test_polymorphie_ueber_die_oberklasse(self) -> None:
         stichtag = date(2026, 8, 18)
         leistungen = [
-            Klausur("Klausur", date(2026, 9, 12)),
-            Portfolio("Portfolio", [date(2026, 8, 25)]),
-            Fallstudie("Fallstudie", date(2026, 9, 30)),
+            Klausur(date(2026, 9, 12)),
+            Portfolio([date(2026, 8, 25)]),
+            Fallstudie(date(2026, 9, 30)),
         ]
         fristen = [leistung.naechste_frist(stichtag) for leistung in leistungen]
         self.assertEqual(sorted(fristen)[0], date(2026, 8, 25))
 
     def test_bester_versuch_wird_gewaehlt(self) -> None:
-        klausur = Klausur("Klausur", date(2026, 1, 10))
+        klausur = Klausur(date(2026, 1, 10))
         klausur.trage_versuch_ein(Versuch(1, date(2026, 1, 10), 48))
         klausur.trage_versuch_ein(Versuch(2, date(2026, 3, 10), 84))
         self.assertEqual(klausur.bester_versuch.note, Note(2.0))
         self.assertTrue(klausur.ist_bestanden)
 
     def test_versuchsnummer_nur_einmal(self) -> None:
-        klausur = Klausur("Klausur", date(2026, 1, 10))
+        klausur = Klausur(date(2026, 1, 10))
         klausur.trage_versuch_ein(Versuch(1, date(2026, 1, 10), 80))
         with self.assertRaises(ValueError):
             klausur.trage_versuch_ein(Versuch(1, date(2026, 2, 10), 90))
@@ -103,7 +101,7 @@ class TestPruefungsleistung(unittest.TestCase):
 class TestModul(unittest.TestCase):
     def _modul_mit_note(self, punkte: int) -> Modul:
         modul = Modul("TEST", "Testmodul", 5, Modulstatus.BESTANDEN)
-        klausur = Klausur("Klausur", date(2026, 1, 10))
+        klausur = Klausur(date(2026, 1, 10))
         klausur.trage_versuch_ein(Versuch(1, date(2026, 1, 10), punkte))
         modul.verlange(klausur)
         return modul
@@ -129,7 +127,7 @@ class TestModul(unittest.TestCase):
 class TestSemesterUndStudiengang(unittest.TestCase):
     def setUp(self) -> None:
         self.studiengang = Studiengang(
-            "B.Sc. Test", "Bachelor of Science", 180, 48, date(2024, 10, 1)
+            "B.Sc. Test", Abschluss.BACHELOR_OF_SCIENCE, 180, 48, date(2024, 10, 1)
         )
 
     def test_komposition_semester_wird_selbst_erzeugt(self) -> None:
@@ -147,7 +145,7 @@ class TestSemesterUndStudiengang(unittest.TestCase):
         erwartet = {36: date(2027, 9, 30), 48: date(2028, 9, 30), 72: date(2030, 9, 30)}
         for monate, zieldatum in erwartet.items():
             with self.subTest(monate=monate):
-                sg = Studiengang("Test", "B.Sc.", 180, monate, beginn)
+                sg = Studiengang("Test", Abschluss.BACHELOR_OF_SCIENCE, 180, monate, beginn)
                 self.assertEqual(sg.zieldatum, zieldatum)
 
     def test_aggregation_modul_ueberlebt_das_semester(self) -> None:
@@ -170,6 +168,62 @@ class TestSemesterUndStudiengang(unittest.TestCase):
         self.assertEqual(addiere_monate(date(2024, 10, 1), 48), date(2028, 10, 1))
 
 
+class TestAbschluss(unittest.TestCase):
+    """Der Abschluss ist eine Aufzaehlung, kein freier Text."""
+
+    def test_freier_text_wird_abgelehnt(self) -> None:
+        with self.assertRaises(TypeError):
+            Studiengang("Test", "Bachelor of Science", 180, 48, date(2024, 10, 1))  # type: ignore[arg-type]
+
+    def test_anzeigeform_und_fachliche_regel(self) -> None:
+        self.assertEqual(str(Abschluss.BACHELOR_OF_SCIENCE), "B.Sc.")
+        self.assertTrue(Abschluss.BACHELOR_OF_ARTS.ist_bachelor)
+        self.assertFalse(Abschluss.MASTER_OF_SCIENCE.ist_bachelor)
+
+
+class TestVersuchBezugsgroessen(unittest.TestCase):
+    """Die Punktzahl wird erst mit Hoechstpunktzahl und Grenze auswertbar."""
+
+    def test_note_folgt_dem_erfuellungsgrad_nicht_der_rohpunktzahl(self) -> None:
+        # 45 von 50 Punkten sind 90 Prozent und damit eine 1,3.
+        versuch = Versuch(1, date(2026, 1, 10), 45, max_punkte=50, bestehensgrenze=25)
+        self.assertEqual(versuch.erfuellungsgrad, 90)
+        self.assertEqual(versuch.note, Note(1.3))
+
+    def test_bestehen_richtet_sich_nach_der_hinterlegten_grenze(self) -> None:
+        knapp = Versuch(1, date(2026, 1, 10), 25, max_punkte=50, bestehensgrenze=25)
+        darunter = Versuch(2, date(2026, 2, 10), 24, max_punkte=50, bestehensgrenze=25)
+        self.assertTrue(knapp.ist_bestanden)
+        self.assertFalse(darunter.ist_bestanden)
+
+    def test_unsinnige_bezugsgroessen_werden_abgelehnt(self) -> None:
+        with self.assertRaises(ValueError):
+            Versuch(1, date(2026, 1, 1), 10, max_punkte=0)
+        with self.assertRaises(ValueError):
+            Versuch(1, date(2026, 1, 1), 10, max_punkte=50, bestehensgrenze=60)
+        with self.assertRaises(ValueError):
+            Versuch(1, date(2026, 1, 1), 60, max_punkte=50)
+
+
+class TestModulOhneSemester(unittest.TestCase):
+    """Multiplizitaet 0..1: Ein Modul muss keinem Semester zugeordnet sein."""
+
+    def test_modul_lebt_ohne_semesterzuordnung(self) -> None:
+        modul = Modul("DLBFREI", "Noch nicht eingeplant", 5, Modulstatus.OFFEN)
+        modul.verlange(Klausur(date(2027, 3, 1)))
+        self.assertEqual(modul.ects, 5)
+        self.assertEqual(len(modul.pruefungsleistungen), 1)
+
+    def test_freigegebenes_modul_ueberlebt_sein_semester(self) -> None:
+        semester = Semester(1, date(2024, 10, 1), date(2025, 5, 31))
+        modul = Modul("DLBFREI", "Wird umgehaengt", 5, Modulstatus.OFFEN)
+        semester.belege(modul)
+        zurueck = semester.gib_frei("DLBFREI")
+        self.assertIs(zurueck, modul)
+        self.assertEqual(semester.module, ())
+        self.assertEqual(zurueck.kuerzel, "DLBFREI")
+
+
 if __name__ == "__main__":
     unittest.main()
 
@@ -183,10 +237,10 @@ class TestStichtagsbezug(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.studiengang = Studiengang("B.Sc. Test", "B.Sc.", 180, 48, date(2024, 10, 1))
+        self.studiengang = Studiengang("B.Sc. Test", Abschluss.BACHELOR_OF_SCIENCE, 180, 48, date(2024, 10, 1))
         for kuerzel, tag in (("A", date(2025, 3, 1)), ("B", date(2026, 3, 1))):
             modul = Modul(kuerzel, f"Modul {kuerzel}", 5, Modulstatus.BESTANDEN)
-            klausur = Klausur("Klausur", tag)
+            klausur = Klausur(tag)
             klausur.trage_versuch_ein(Versuch(1, tag, 85))
             modul.verlange(klausur)
             self.studiengang.semester_mit_nummer(1).belege(modul)
@@ -214,7 +268,7 @@ class TestRobustheit(unittest.TestCase):
         for ects, monate, semester in ((0, 48, 6), (180, 0, 6), (180, 48, 0)):
             with self.subTest(ects=ects, monate=monate, semester=semester):
                 with self.assertRaises(ValueError):
-                    Studiengang("Test", "B.Sc.", ects, monate, date(2024, 10, 1), semester)
+                    Studiengang("Test", Abschluss.BACHELOR_OF_SCIENCE, ects, monate, date(2024, 10, 1), semester)
 
     def test_versuch_prueft_die_punktzahl(self) -> None:
         for punkte in (-1, 101):
@@ -224,13 +278,13 @@ class TestRobustheit(unittest.TestCase):
 
     def test_modul_ohne_bestandene_teilleistung_hat_keine_note(self) -> None:
         modul = Modul("TEST", "Testmodul", 5, Modulstatus.IN_BEARBEITUNG)
-        klausur = Klausur("Klausur", date(2026, 1, 10))
+        klausur = Klausur(date(2026, 1, 10))
         klausur.trage_versuch_ein(Versuch(1, date(2026, 1, 10), 30))
         modul.verlange(klausur)
         self.assertFalse(modul.ist_bestanden)
         self.assertIsNone(modul.note)
 
     def test_endfrist_ist_unabhaengig_vom_stichtag(self) -> None:
-        portfolio = Portfolio("Portfolio", [date(2026, 8, 25), date(2026, 11, 24)])
+        portfolio = Portfolio([date(2026, 8, 25), date(2026, 11, 24)])
         self.assertIsNone(portfolio.naechste_frist(date(2026, 12, 1)))
         self.assertEqual(portfolio.endfrist, date(2026, 11, 24))

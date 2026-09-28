@@ -115,7 +115,7 @@ class TestSQLiteRepository(unittest.TestCase):
         studiengang = erzeuge_beispielstudiengang()
 
         modul = Modul("NEU-01", "Zusatzmodul", 5, Modulstatus.BESTANDEN)
-        klausur = Klausur("Klausur Zusatzmodul", date(2026, 4, 4))
+        klausur = Klausur(date(2026, 4, 4))
         klausur.trage_versuch_ein(Versuch(1, date(2026, 4, 4), 95))
         modul.verlange(klausur)
         studiengang.semester_mit_nummer(3).belege(modul)

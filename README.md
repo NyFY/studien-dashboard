@@ -50,7 +50,7 @@ Alternativ: `python -m studiendashboard`
 python -m unittest discover -s tests -t .
 ```
 
-92 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
+103 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
 Rundlauf durch die Datenbank alle Daten erhält und ob die Ampeln an den
 Schwellenwerten richtig umschlagen.
 
@@ -86,7 +86,7 @@ studiendashboard/
   service/          fachliche Berechnungen ueber mehrere Objekte hinweg
   repository/       Speicherung (SQLite und Arbeitsspeicher) sowie Beispieldaten
   domain/           Fachklassen: Studiengang, Semester, Modul, Pruefungsleistung, Versuch, Note
-tests/              92 Tests mit unittest
+tests/              103 Tests mit unittest
 ```
 
 Umgesetzte objektorientierte Konzepte:
@@ -105,7 +105,12 @@ Umgesetzte objektorientierte Konzepte:
   Deshalb liegen `Zielbewertung` und `Ampel` in `dto` und nicht in `ziele`,
   denn beide Schichten brauchen sie.
 - **Unveränderlichkeit**: `Note` und `Versuch` sind eingefrorene Dataclasses.
-  `Note` prüft beim Erzeugen, ob der Wert eine zulässige Notenstufe ist.
+  `Note` prüft beim Erzeugen, ob der Wert eine zulässige Notenstufe ist. Ein
+  `Versuch` führt neben den erreichten Punkten die Höchstpunktzahl und die
+  Bestehensgrenze mit und ist damit für sich allein auswertbar.
+- **Aufzählungen**: `Modulstatus`, `Abschluss` und `Ampel` begrenzen ihren
+  Wertebereich im Modell. Ein Studiengang mit `abschluss="Bachelor of Science"`
+  als Text wird abgelehnt.
 - **Polymorphie**: Der Controller ruft `bewerte()` auf allen Zielen auf, ohne
   ihre Typen zu kennen. Ein viertes Ziel ist eine neue Unterklasse.
 

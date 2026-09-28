@@ -16,7 +16,8 @@ from __future__ import annotations
 from datetime import date
 
 from ..domain import (
-    Fallstudie, Klausur, Modul, Modulstatus, Portfolio, Studiengang, Versuch,
+    Abschluss, Fallstudie, Klausur, Modul, Modulstatus, Portfolio, Studiengang,
+    Versuch,
 )
 
 STUDIENBEGINN = date(2024, 10, 1)
@@ -84,15 +85,15 @@ _GEPLANT: tuple[tuple, ...] = (
 )
 
 
-def _erzeuge_leistung(art: str, bezeichnung: str, termin):
+def _erzeuge_leistung(art: str, termin):
     """Erzeugt die zur Art passende Pruefungsleistung."""
     if art == "klausur":
-        return Klausur(f"Klausur {bezeichnung}", pruefungstermin=termin)
+        return Klausur(pruefungstermin=termin)
     if art == "fallstudie":
-        return Fallstudie(f"Schriftliche Ausarbeitung {bezeichnung}", abgabefrist=termin)
+        return Fallstudie(abgabefrist=termin)
     if art == "portfolio":
         fristen = termin if isinstance(termin, list) else [termin]
-        return Portfolio(f"Portfolio {bezeichnung}", phasenfristen=fristen)
+        return Portfolio(phasenfristen=fristen)
     raise ValueError(f"Unbekannte Pruefungsart: {art}")
 
 
@@ -100,7 +101,7 @@ def erzeuge_beispielstudiengang() -> Studiengang:
     """Baut den vollstaendigen Beispieldatensatz auf."""
     studiengang = Studiengang(
         bezeichnung="B.Sc. Cyber Security",
-        abschluss="Bachelor of Science",
+        abschluss=Abschluss.BACHELOR_OF_SCIENCE,
         gesamt_ects=180,
         geplante_dauer_monate=GEPLANTE_DAUER_MONATE,
         studienbeginn=STUDIENBEGINN,
@@ -109,19 +110,19 @@ def erzeuge_beispielstudiengang() -> Studiengang:
 
     for nummer, kuerzel, bezeichnung, ects, art, termin, punkte in _BESTANDEN:
         modul = Modul(kuerzel, bezeichnung, ects, Modulstatus.BESTANDEN)
-        leistung = _erzeuge_leistung(art, bezeichnung, termin)
+        leistung = _erzeuge_leistung(art, termin)
         leistung.trage_versuch_ein(Versuch(nummer=1, datum=termin, erreichte_punkte=punkte))
         modul.verlange(leistung)
         studiengang.semester_mit_nummer(nummer).belege(modul)
 
     for nummer, kuerzel, bezeichnung, ects, art, termin, begonnen in _IN_BEARBEITUNG:
         modul = Modul(kuerzel, bezeichnung, ects, Modulstatus.IN_BEARBEITUNG, begonnen_am=begonnen)
-        modul.verlange(_erzeuge_leistung(art, bezeichnung, termin))
+        modul.verlange(_erzeuge_leistung(art, termin))
         studiengang.semester_mit_nummer(nummer).belege(modul)
 
     for nummer, kuerzel, bezeichnung, ects, art, termin in _GEPLANT:
         modul = Modul(kuerzel, bezeichnung, ects, Modulstatus.OFFEN)
-        modul.verlange(_erzeuge_leistung(art, bezeichnung, termin))
+        modul.verlange(_erzeuge_leistung(art, termin))
         studiengang.semester_mit_nummer(nummer).belege(modul)
 
     return studiengang

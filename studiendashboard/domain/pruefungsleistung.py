@@ -21,10 +21,9 @@ class Pruefungsleistung(ABC):
     Tupel herausgegeben.
     """
 
-    def __init__(self, bezeichnung: str, gewichtung: float = 1.0) -> None:
+    def __init__(self, gewichtung: float = 1.0) -> None:
         if not 0 < gewichtung <= 1.0:
             raise ValueError("Die Gewichtung muss groesser als 0 und hoechstens 1 sein")
-        self.bezeichnung = bezeichnung
         self.gewichtung = gewichtung
         self._versuche: list[Versuch] = []
 
@@ -92,7 +91,9 @@ class Pruefungsleistung(ABC):
         """
 
     def __str__(self) -> str:
-        return f"{self.art()} '{self.bezeichnung}'"
+        """Die Unterklasse benennt die Pruefungsform, ein eigenes
+        Bezeichnungsfeld wuerde diese Information nur wiederholen."""
+        return f"{self.art()} ({self.endfrist:%d.%m.%Y})"
 
 
 class Klausur(Pruefungsleistung):
@@ -100,13 +101,12 @@ class Klausur(Pruefungsleistung):
 
     def __init__(
         self,
-        bezeichnung: str,
         pruefungstermin: date,
         dauer_minuten: int = 90,
         ist_onlineklausur: bool = True,
         gewichtung: float = 1.0,
     ) -> None:
-        super().__init__(bezeichnung, gewichtung)
+        super().__init__(gewichtung)
         self.pruefungstermin = pruefungstermin
         self.dauer_minuten = dauer_minuten
         self.ist_onlineklausur = ist_onlineklausur
@@ -132,11 +132,10 @@ class Portfolio(Pruefungsleistung):
 
     def __init__(
         self,
-        bezeichnung: str,
         phasenfristen: list[date],
         gewichtung: float = 1.0,
     ) -> None:
-        super().__init__(bezeichnung, gewichtung)
+        super().__init__(gewichtung)
         if not phasenfristen:
             raise ValueError("Ein Portfolio braucht mindestens eine Phasenfrist")
         self.phasenfristen = tuple(sorted(phasenfristen))
@@ -167,12 +166,11 @@ class Fallstudie(Pruefungsleistung):
 
     def __init__(
         self,
-        bezeichnung: str,
         abgabefrist: date,
         thema: str = "",
         gewichtung: float = 1.0,
     ) -> None:
-        super().__init__(bezeichnung, gewichtung)
+        super().__init__(gewichtung)
         self.abgabefrist = abgabefrist
         self.thema = thema
 

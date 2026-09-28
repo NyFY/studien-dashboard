@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from ..dto import Ampel, Kennzahlen, Zielbewertung
 from .studienziel import Studienziel
 
@@ -62,3 +64,19 @@ class Zeitziel(Studienziel):
             hinweis=hinweis,
             ampel=ampel,
         )
+
+    # -- Fachliche Ausgabe des Ziels --------------------------------------
+
+    def prognostiziertes_ende(self, kennzahlen: Kennzahlen) -> date | None:
+        """Datum, an dem der Abschluss beim bisherigen Tempo erreicht waere.
+
+        Die Ampel sagt nur, ob der Rueckstand noch im Rahmen liegt; erst
+        diese Zahl sagt, worauf er hinauslaeuft. Sie gehoert deshalb zum
+        Zeitziel und steht auch im Klassendiagramm an dieser Klasse. Die
+        Hochrechnung selbst macht der FortschrittsService einmal fuer alle.
+
+        Returns:
+            Das prognostizierte Abschlussdatum, oder None, solange noch kein
+            Modul bestanden ist und sich kein Tempo ableiten laesst.
+        """
+        return kennzahlen.prognose_datum

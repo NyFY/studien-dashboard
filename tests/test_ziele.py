@@ -163,5 +163,27 @@ class TestErweiterbarkeit(unittest.TestCase):
             Unvollstaendig(1.0, 0.0)     # type: ignore[abstract]
 
 
+class TestFachlicheAusgaben(unittest.TestCase):
+    """Jedes Ziel liefert neben der Ampel die Zahl, die zu ihm gehoert."""
+
+    def test_zeitziel_nennt_das_prognostizierte_ende(self) -> None:
+        self.assertEqual(
+            Zeitziel().prognostiziertes_ende(kennzahlen()), date(2029, 6, 13)
+        )
+
+    def test_zeitziel_ohne_tempo_liefert_keine_prognose(self) -> None:
+        self.assertIsNone(
+            Zeitziel().prognostiziertes_ende(kennzahlen(prognose_datum=None))
+        )
+
+    def test_notenziel_nennt_den_hoechsten_restschnitt(self) -> None:
+        self.assertAlmostEqual(
+            Notenziel().hoechster_restschnitt(kennzahlen()), 2.14
+        )
+
+    def test_wipziel_nennt_das_alter_des_aeltesten_moduls(self) -> None:
+        self.assertEqual(WipZiel().alter_aeltestes_modul(kennzahlen()), 96)
+
+
 if __name__ == "__main__":
     unittest.main()

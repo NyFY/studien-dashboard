@@ -42,9 +42,9 @@ class TestFortschrittsService(unittest.TestCase):
         self.assertEqual(self.service.tage_verzug(self.studiengang, STICHTAG), 256)
 
     def test_ohne_bestandene_module_keine_prognose(self) -> None:
-        from studiendashboard.domain import Studiengang
+        from studiendashboard.domain import Abschluss, Studiengang
 
-        leer = Studiengang("Test", "B.Sc.", 180, 48, date(2024, 10, 1))
+        leer = Studiengang("Test", Abschluss.BACHELOR_OF_SCIENCE, 180, 48, date(2024, 10, 1))
         self.assertIsNone(self.service.prognose(leer, STICHTAG))
 
     def test_verlauf_steigt_monoton(self) -> None:

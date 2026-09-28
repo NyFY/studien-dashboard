@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 
 from ..domain import (
-    Fallstudie, Klausur, Modul, Modulstatus, Portfolio,
+    Abschluss, Fallstudie, Klausur, Modul, Modulstatus, Portfolio,
     Pruefungsleistung, Studiengang, Versuch,
 )
 from ..ziele import Studienziel, erzeuge_ziel
@@ -41,7 +41,6 @@ CREATE TABLE IF NOT EXISTS pruefungsleistung (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     modul_kuerzel     TEXT    NOT NULL REFERENCES modul (kuerzel) ON DELETE CASCADE,
     art               TEXT    NOT NULL,
-    bezeichnung       TEXT    NOT NULL,
     gewichtung        REAL    NOT NULL DEFAULT 1.0,
     termin            TEXT,
     dauer_minuten     INTEGER,
@@ -61,6 +60,8 @@ CREATE TABLE IF NOT EXISTS versuch (
     nummer               INTEGER NOT NULL,
     datum                TEXT    NOT NULL,
     erreichte_punkte     INTEGER NOT NULL,
+    max_punkte           INTEGER NOT NULL DEFAULT 100,
+    bestehensgrenze      INTEGER NOT NULL DEFAULT 50,
     UNIQUE (pruefungsleistung_id, nummer)
 );
 
@@ -117,7 +118,7 @@ class SQLiteStudiengangRepository(StudiengangRepository):
 
             studiengang = Studiengang(
                 bezeichnung=kopf["bezeichnung"],
-                abschluss=kopf["abschluss"],
+                abschluss=Abschluss[kopf["abschluss"]],
                 gesamt_ects=kopf["gesamt_ects"],
                 geplante_dauer_monate=kopf["geplante_dauer_monate"],
                 studienbeginn=date.fromisoformat(kopf["studienbeginn"]),
@@ -159,7 +160,6 @@ class SQLiteStudiengangRepository(StudiengangRepository):
             art = zeile["art"]
             if art == "klausur":
                 leistung: Pruefungsleistung = Klausur(
-                    bezeichnung=zeile["bezeichnung"],
                     pruefungstermin=date.fromisoformat(zeile["termin"]),
                     dauer_minuten=(
                         zeile["dauer_minuten"] if zeile["dauer_minuten"] is not None else 90
@@ -169,7 +169,6 @@ class SQLiteStudiengangRepository(StudiengangRepository):
                 )
             elif art == "fallstudie":
                 leistung = Fallstudie(
-                    bezeichnung=zeile["bezeichnung"],
                     abgabefrist=date.fromisoformat(zeile["termin"]),
                     thema=zeile["thema"] or "",
                     gewichtung=zeile["gewichtung"],
@@ -183,7 +182,6 @@ class SQLiteStudiengangRepository(StudiengangRepository):
                     )
                 ]
                 leistung = Portfolio(
-                    bezeichnung=zeile["bezeichnung"],
                     phasenfristen=fristen,
                     gewichtung=zeile["gewichtung"],
                 )
@@ -191,7 +189,8 @@ class SQLiteStudiengangRepository(StudiengangRepository):
                 raise ValueError(f"Unbekannte Pruefungsart in der Datenbank: {art}")
 
             for v in verbindung.execute(
-                "SELECT nummer, datum, erreichte_punkte FROM versuch "
+                "SELECT nummer, datum, erreichte_punkte, max_punkte, bestehensgrenze "
+                "FROM versuch "
                 "WHERE pruefungsleistung_id = ? ORDER BY nummer",
                 (zeile["id"],),
             ):
@@ -200,6 +199,8 @@ class SQLiteStudiengangRepository(StudiengangRepository):
                         nummer=v["nummer"],
                         datum=date.fromisoformat(v["datum"]),
                         erreichte_punkte=v["erreichte_punkte"],
+                        max_punkte=v["max_punkte"],
+                        bestehensgrenze=v["bestehensgrenze"],
                     )
                 )
             leistungen.append(leistung)
@@ -257,7 +258,7 @@ class SQLiteStudiengangRepository(StudiengangRepository):
                 "INSERT INTO studiengang VALUES (1, ?, ?, ?, ?, ?, ?)",
                 (
                     studiengang.bezeichnung,
-                    studiengang.abschluss,
+                    studiengang.abschluss.name,
                     studiengang.gesamt_ects,
                     studiengang.geplante_dauer_monate,
                     studiengang.studienbeginn.isoformat(),
@@ -299,9 +300,9 @@ class SQLiteStudiengangRepository(StudiengangRepository):
 
         zeiger = verbindung.execute(
             "INSERT INTO pruefungsleistung "
-            "(modul_kuerzel, art, bezeichnung, gewichtung, termin, dauer_minuten, "
-            " ist_onlineklausur, thema) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (modul_kuerzel, art, leistung.bezeichnung, leistung.gewichtung,
+            "(modul_kuerzel, art, gewichtung, termin, dauer_minuten, "
+            " ist_onlineklausur, thema) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (modul_kuerzel, art, leistung.gewichtung,
              termin, dauer, online, thema),
         )
         leistung_id = zeiger.lastrowid
@@ -313,10 +314,11 @@ class SQLiteStudiengangRepository(StudiengangRepository):
             )
 
         verbindung.executemany(
-            "INSERT INTO versuch (pruefungsleistung_id, nummer, datum, erreichte_punkte) "
-            "VALUES (?, ?, ?, ?)",
+            "INSERT INTO versuch (pruefungsleistung_id, nummer, datum, erreichte_punkte, "
+            "max_punkte, bestehensgrenze) VALUES (?, ?, ?, ?, ?, ?)",
             [
-                (leistung_id, v.nummer, v.datum.isoformat(), v.erreichte_punkte)
+                (leistung_id, v.nummer, v.datum.isoformat(), v.erreichte_punkte,
+                 v.max_punkte, v.bestehensgrenze)
                 for v in leistung.versuche
             ],
         )

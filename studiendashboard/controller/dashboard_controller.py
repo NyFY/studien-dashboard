@@ -52,7 +52,7 @@ class DashboardController:
 
         return DashboardDaten(
             studiengang_titel=studiengang.bezeichnung,
-            abschluss=studiengang.abschluss,
+            abschluss=str(studiengang.abschluss),
             studienbeginn=studiengang.studienbeginn,
             zieldatum=studiengang.zieldatum,
             geplante_dauer_monate=studiengang.geplante_dauer_monate,

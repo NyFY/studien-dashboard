@@ -61,3 +61,14 @@ class WipZiel(Studienziel):
             hinweis=hinweis,
             ampel=ampel,
         )
+
+    # -- Fachliche Ausgabe des Ziels --------------------------------------
+
+    def alter_aeltestes_modul(self, kennzahlen: Kennzahlen) -> int:
+        """Alter des am laengsten begonnenen Moduls in Tagen.
+
+        Die Anzahl offener Module allein unterschaetzt das Risiko: Drei seit
+        einer Woche begonnene Module sind etwas anderes als drei seit einem
+        halben Jahr liegen gebliebene. Deshalb gehoert diese Zahl zum Ziel.
+        """
+        return kennzahlen.aeltestes_modul_tage

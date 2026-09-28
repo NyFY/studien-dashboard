@@ -5,6 +5,7 @@ from __future__ import annotations
 import calendar
 from datetime import date, timedelta
 
+from .abschluss import Abschluss
 from .modul import Modul
 from .note import Note, NOTENSTUFEN
 from .semester import Semester
@@ -36,7 +37,7 @@ class Studiengang:
     def __init__(
         self,
         bezeichnung: str,
-        abschluss: str,
+        abschluss: Abschluss,
         gesamt_ects: int,
         geplante_dauer_monate: int,
         studienbeginn: date,
@@ -48,6 +49,8 @@ class Studiengang:
             raise ValueError("Die geplante Studiendauer muss groesser als null sein")
         if anzahl_semester <= 0:
             raise ValueError("Ein Studiengang braucht mindestens ein Semester")
+        if not isinstance(abschluss, Abschluss):
+            raise TypeError("abschluss muss ein Wert der Aufzaehlung Abschluss sein")
 
         self.bezeichnung = bezeichnung
         self.abschluss = abschluss

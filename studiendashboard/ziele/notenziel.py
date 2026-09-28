@@ -60,3 +60,19 @@ class Notenziel(Studienziel):
             hinweis=hinweis,
             ampel=ampel,
         )
+
+    # -- Fachliche Ausgabe des Ziels --------------------------------------
+
+    def hoechster_restschnitt(self, kennzahlen: Kennzahlen) -> float | None:
+        """Durchschnitt, den die verbleibenden Module hoechstens haben duerfen.
+
+        Diese Rueckwaertsrechnung ist die eigentliche Handlungsanweisung des
+        Notenziels: Der Ist-Schnitt sagt, wo ich stehe, dieser Wert sagt, was
+        noch geht.
+
+        Returns:
+            Der hoechste zulaessige Restschnitt, oder None, wenn keine Module
+            mehr offen sind oder das Ziel rechnerisch nicht mehr erreichbar
+            ist.
+        """
+        return kennzahlen.benoetigter_restschnitt
