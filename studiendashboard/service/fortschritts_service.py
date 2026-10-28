@@ -86,7 +86,10 @@ class FortschrittsService:
                     tag=(datum - studiengang.studienbeginn).days, datum=datum, ects=summe
                 )
             )
-        if punkte[-1].datum != stichtag:
+        # Nur nach vorn verlaengern. Liegt der Stichtag vor dem Studienbeginn
+        # oder vor dem letzten bestandenen Modul, wuerde der Schlusspunkt die
+        # Kurve zurueckziehen, und genau das soll sie nicht tun.
+        if stichtag > punkte[-1].datum:
             punkte.append(
                 Verlaufspunkt(
                     tag=(stichtag - studiengang.studienbeginn).days,

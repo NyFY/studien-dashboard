@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ..dto import Ampel, Kennzahlen, Zielbewertung
+from ..dto import Kennzahlen
+from ..ergebnis import Ampel, Zielbewertung
 from .studienziel import Studienziel
 
 
@@ -13,6 +14,8 @@ class Notenziel(Studienziel):
     hoechstens haben duerfen. Erst diese Rueckwaertsrechnung enthaelt eine
     Handlungsanweisung.
     """
+
+    bedeutung = ("angestrebte Abschlussnote", "erlaubte Ueberschreitung")
 
     def __init__(self, zielnote: float = 2.0, toleranz: float = 0.2) -> None:
         super().__init__(zielnote, toleranz)

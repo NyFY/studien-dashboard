@@ -50,9 +50,10 @@ Alternativ: `python -m studiendashboard`
 python -m unittest discover -s tests -t .
 ```
 
-106 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
-Rundlauf durch die Datenbank alle Daten erhält und ob die Ampeln an den
-Schwellenwerten richtig umschlagen.
+118 Tests, Laufzeit unter einer Sekunde. Sie prüfen unter anderem, ob der
+Rundlauf durch die Datenbank alle Daten erhält, ob die Ampeln an den
+Schwellenwerten richtig umschlagen und ob die Importe der Pakete noch in die
+erlaubte Richtung zeigen.
 
 ## Datengrundlage
 
@@ -73,20 +74,21 @@ lassen sich dort ändern, ohne den Code anzufassen.
 
 ## Aufbau
 
-Der Code folgt einem Schichtenmodell. Die Abhaengigkeiten zeigen nur in eine
-Richtung: Keine Schicht kennt eine Schicht ueber sich.
+Der Code folgt einem Schichtenmodell. Die Abhängigkeiten zeigen nur in eine
+Richtung: Keine Schicht kennt eine Schicht über sich.
 
 ```
 studiendashboard/
   app.py            Composition Root: erzeugt und verdrahtet alle Objekte
   controller/       stellt aus Repository, Services und Zielen die Anzeigedaten zusammen
   view/             zwei austauschbare Ansichten (tkinter und Konsole) plus Bausteine
-  dto/              Datentransportobjekte samt Ergebnisklassen Zielbewertung und Ampel
+  dto/              Datentransportobjekte für die Anzeige
   ziele/            Studienziele und ihre Bewertungsregeln
-  service/          fachliche Berechnungen ueber mehrere Objekte hinweg
+  ergebnis/         Ergebnistypen der Bewertung: Zielbewertung und Ampel
+  service/          fachliche Berechnungen über mehrere Objekte hinweg
   repository/       Speicherung (SQLite und Arbeitsspeicher) sowie Beispieldaten
-  domain/           Fachklassen: Studiengang, Semester, Modul, Pruefungsleistung, Versuch, Note
-tests/              106 Tests mit unittest
+  domain/           Fachklassen: Studiengang, Semester, Modul, Prüfungsleistung, Versuch, Note
+tests/              118 Tests mit unittest
 ```
 
 Umgesetzte objektorientierte Konzepte:
@@ -102,8 +104,11 @@ Umgesetzte objektorientierte Konzepte:
 - **Kapselung**: Abgeleitete Attribute des Klassendiagramms sind Properties
   ohne Setter, etwa `Studiengang.erreichte_ects` oder `Modul.note`.
 - **Abhängigkeitsrichtung**: Die Pakete kennen sich nur in eine Richtung.
-  Deshalb liegen `Zielbewertung` und `Ampel` in `dto` und nicht in `ziele`,
-  denn beide Schichten brauchen sie.
+  Deshalb liegen `Zielbewertung` und `Ampel` im eigenen Paket `ergebnis`, das
+  selbst nichts kennt. Lägen sie bei den Zielen, entstünde ein Ringschluss
+  zwischen `dto` und `ziele`: `DashboardDaten` führt die Zielbewertungen mit,
+  und jedes Ziel braucht die `Kennzahlen`. `tests/test_architektur.py` liest
+  die Importe aller Module ein und lässt diese Regel nicht mehr kaputtgehen.
 - **Unveränderlichkeit**: `Note` und `Versuch` sind eingefrorene Dataclasses.
   `Note` prüft beim Erzeugen, ob der Wert eine zulässige Notenstufe ist. Ein
   `Versuch` führt neben den erreichten Punkten die Höchstpunktzahl und die

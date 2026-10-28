@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from ..dto import Ampel, Kennzahlen, Zielbewertung
+from ..dto import Kennzahlen
+from ..ergebnis import Ampel, Zielbewertung
 from .studienziel import Studienziel
 
 
@@ -17,8 +18,14 @@ class Zeitziel(Studienziel):
     fest verdrahtet.
     """
 
+    bedeutung = ("angestrebte Studiendauer in Monaten", "erlaubter Rueckstand in ECTS")
+
     def __init__(self, zielmonate: int = 48, toleranz_ects: float = 5.0) -> None:
         super().__init__(zielmonate, toleranz_ects)
+
+    @classmethod
+    def aus_werten(cls, zielwert: float, toleranz: float) -> "Zeitziel":
+        return cls(zielmonate=int(zielwert), toleranz_ects=toleranz)
 
     @property
     def titel(self) -> str:

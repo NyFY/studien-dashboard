@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ..dto import Ampel, Kennzahlen, Zielbewertung
+from ..dto import Kennzahlen
+from ..ergebnis import Ampel, Zielbewertung
 from .studienziel import Studienziel
 
 
@@ -14,12 +15,19 @@ class WipZiel(Studienziel):
     Modul ist das eigentliche Warnsignal.
     """
 
+    bedeutung = ("hoechstens gleichzeitig offene Module", "hoechstes Alter in Tagen")
+
     def __init__(self, hoechstzahl: int = 3, hoechstalter_tage: int = 90) -> None:
         super().__init__(hoechstzahl, hoechstalter_tage)
 
+    @classmethod
+    def aus_werten(cls, zielwert: float, toleranz: float) -> "WipZiel":
+        return cls(hoechstzahl=int(zielwert), hoechstalter_tage=int(toleranz))
+
     @property
     def titel(self) -> str:
-        return f"Höchstens {self.hoechstzahl} Module gleichzeitig"
+        wort = "Modul" if self.hoechstzahl == 1 else "Module"
+        return f"Höchstens {self.hoechstzahl} {wort} gleichzeitig"
 
     @property
     def hoechstzahl(self) -> int:

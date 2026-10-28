@@ -224,10 +224,6 @@ class TestModulOhneSemester(unittest.TestCase):
         self.assertEqual(zurueck.kuerzel, "DLBFREI")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestStichtagsbezug(unittest.TestCase):
     """Die Ist-Seite muss sich genauso am Stichtag orientieren wie die Sollseite.
 
@@ -288,3 +284,6 @@ class TestRobustheit(unittest.TestCase):
         portfolio = Portfolio([date(2026, 8, 25), date(2026, 11, 24)])
         self.assertIsNone(portfolio.naechste_frist(date(2026, 12, 1)))
         self.assertEqual(portfolio.endfrist, date(2026, 11, 24))
+
+if __name__ == "__main__":
+    unittest.main()

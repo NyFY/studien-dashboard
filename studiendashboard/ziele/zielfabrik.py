@@ -1,8 +1,10 @@
 """Erzeugt Studienziele aus gespeicherten Werten.
 
-Diese Zuordnung ist die einzige Stelle, an der aus der gespeicherten Zielart
-wieder die passende Unterklasse wird. Sie entspricht dem Vorgehen im
-Repository, das aus der Spalte ``art`` die richtige Pruefungsform erzeugt.
+Die Zuordnung von Kennung zu Unterklasse steht nicht hier, sondern im
+Verzeichnis der Oberklasse ``Studienziel``, in das sich jede Unterklasse beim
+Erben selbst eintraegt. Diese Datei dispatcht nur noch darueber. Ein viertes
+Studienziel ist damit wirklich eine neue Unterklasse und sonst nichts: Es gibt
+keine Stelle mehr, die alle Zielarten aufzaehlt und mitwachsen muesste.
 """
 
 from __future__ import annotations
@@ -12,34 +14,36 @@ from .studienziel import Studienziel
 from .wipziel import WipZiel
 from .zeitziel import Zeitziel
 
-#: Bedeutung von zielwert und toleranz je Zielart.
-BEDEUTUNG: dict[str, tuple[str, str]] = {
-    "zeitziel": ("angestrebte Studiendauer in Monaten", "erlaubter Rueckstand in ECTS"),
-    "notenziel": ("angestrebte Abschlussnote", "erlaubte Ueberschreitung"),
-    "wipziel": ("hoechstens gleichzeitig offene Module", "hoechstes Alter in Tagen"),
-}
-
 
 def erzeuge_ziel(art: str, zielwert: float, toleranz: float, ist_aktiv: bool) -> Studienziel:
-    """Baut das zur Art passende Studienziel.
+    """Baut das zur Kennung passende Studienziel.
 
     Raises:
-        ValueError: Wenn die Zielart unbekannt ist.
+        ValueError: Wenn keine Unterklasse diese Kennung traegt.
     """
-    if art == "zeitziel":
-        ziel: Studienziel = Zeitziel(zielmonate=int(zielwert), toleranz_ects=toleranz)
-    elif art == "notenziel":
-        ziel = Notenziel(zielnote=zielwert, toleranz=toleranz)
-    elif art == "wipziel":
-        ziel = WipZiel(hoechstzahl=int(zielwert), hoechstalter_tage=int(toleranz))
-    else:
-        raise ValueError(f"Unbekannte Zielart: {art}")
+    ziel = Studienziel.mit_kennung(art).aus_werten(zielwert, toleranz)
     ziel.ist_aktiv = ist_aktiv
     return ziel
 
 
+def bedeutungen() -> dict[str, tuple[str, str]]:
+    """Was zielwert und toleranz je Zielart bedeuten.
+
+    Wird aus dem Verzeichnis gelesen und waechst deshalb mit einer neuen
+    Unterklasse mit, ohne dass hier etwas nachgetragen wird.
+    """
+    return {
+        kennung: klasse.bedeutung
+        for kennung, klasse in sorted(Studienziel._arten.items())
+    }
+
+
 def standardziele(geplante_dauer_monate: int = 48) -> list[Studienziel]:
-    """Die drei Ziele aus der Konzeptionsphase mit ihren Ausgangswerten."""
+    """Die drei Ziele aus der Konzeptionsphase mit ihren Ausgangswerten.
+
+    Nur die Erstbefuellung einer leeren Datenbank. Danach stehen die Ziele in
+    der Tabelle ``studienziel`` und werden von dort gelesen.
+    """
     return [
         Zeitziel(zielmonate=geplante_dauer_monate),
         Notenziel(zielnote=2.0),

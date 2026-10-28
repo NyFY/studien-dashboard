@@ -86,10 +86,6 @@ class TestNotenService(unittest.TestCase):
         self.assertFalse(NotenService.ist_gueltige_note(2.4))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestRandfaelle(unittest.TestCase):
     """Randfaelle, die ein Review aufgedeckt hat."""
 
@@ -116,3 +112,6 @@ class TestRandfaelle(unittest.TestCase):
         self.assertEqual(NotenService.band_index(1.80), 2)
         self.assertEqual(NotenService.band_index(4.0), 5)
         self.assertEqual(NotenService.band_index(None), -1)
+
+if __name__ == "__main__":
+    unittest.main()

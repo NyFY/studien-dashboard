@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 
-from .ergebnis import Zielbewertung
+from ..ergebnis import Ampel, Zielbewertung
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,7 +47,7 @@ class ModulZeile:
     note: str
     naechste_frist: str
     offen_seit_tage: int | None
-    ampel: str
+    ampel: Ampel
 
 
 @dataclass(frozen=True, slots=True)

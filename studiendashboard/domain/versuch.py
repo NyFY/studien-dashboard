@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from datetime import date
 
 from .note import Note
@@ -48,8 +49,14 @@ class Versuch:
 
     @property
     def erfuellungsgrad(self) -> int:
-        """Erreichte Punkte in Prozent der Hoechstpunktzahl, kaufmaennisch gerundet."""
-        return round(self.erreichte_punkte * 100 / self.max_punkte)
+        """Erreichte Punkte in Prozent der Hoechstpunktzahl, kaufmaennisch gerundet.
+
+        Das eingebaute ``round`` rundet bei genau 0,5 zur geraden Zahl; aus
+        84,5 wuerde damit 84 und eine Notenstufe schlechter. Gerundet wird
+        deshalb von Hand.
+        """
+        return int(Decimal(self.erreichte_punkte * 100) / Decimal(self.max_punkte)
+                   + Decimal("0.5"))
 
     @property
     def note(self) -> Note:

@@ -32,9 +32,14 @@ CREATE TABLE IF NOT EXISTS modul (
     ects            INTEGER NOT NULL,
     status          TEXT    NOT NULL,
     begonnen_am     TEXT,
-    -- Multiplizitaet 0..1 aus dem Klassendiagramm: Ein Modul aus dem
-    -- Modulhandbuch darf noch keinem Semester zugeordnet sein.
-    semester_nummer INTEGER
+    -- Die Multiplizitaet 0..1 aus dem Klassendiagramm liegt in den
+    -- Fachklassen: Ein ``Modul`` lebt ohne ``Semester``, und
+    -- ``Semester.gib_frei`` gibt es unversehrt wieder her. Diese Tabelle
+    -- speichert dagegen den Studienplan, und darin steht jedes Modul in
+    -- genau einem Semester. Die Spalte ist deshalb NOT NULL: Eine NULL
+    -- liesse sich beim Laden keinem Semester zuordnen und waere beim
+    -- naechsten Speichern verloren.
+    semester_nummer INTEGER NOT NULL
 );
 
 -- ON DELETE CASCADE bildet die Komposition aus dem Klassendiagramm ab:

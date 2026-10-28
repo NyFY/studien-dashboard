@@ -6,11 +6,18 @@ ohne Datenbank und ohne Objektgeflecht pruefen, ob die Ampeln stimmen.
 
 from __future__ import annotations
 
+import tempfile
 import unittest
 from datetime import date
+from pathlib import Path
 
 from studiendashboard.dto import Kennzahlen
-from studiendashboard.ziele import Ampel, Notenziel, Studienziel, WipZiel, Zeitziel
+from studiendashboard.ergebnis import Ampel
+from studiendashboard.repository import SQLiteStudiengangRepository
+from studiendashboard.repository.demodaten import erzeuge_beispielstudiengang
+from studiendashboard.ziele import (
+    Notenziel, Studienziel, WipZiel, Zeitziel, bedeutungen, erzeuge_ziel,
+)
 
 
 def kennzahlen(**abweichungen) -> Kennzahlen:
@@ -142,7 +149,7 @@ class TestErweiterbarkeit(unittest.TestCase):
                 return f"Mindestens {self.zielwert:.0f} ECTS je Monat"
 
             def bewerte(self, k: Kennzahlen) -> "Zielbewertung":  # type: ignore[name-defined]
-                from studiendashboard.ziele import Zielbewertung
+                from studiendashboard.ergebnis import Zielbewertung
 
                 tempo = k.ects_ist / 23.5
                 return Zielbewertung(
@@ -224,6 +231,66 @@ class TestSchwellenwerteSindTrennscharf(unittest.TestCase):
                     kennzahlen(offene_module=anzahl, aeltestes_modul_tage=alter)
                 )
                 self.assertEqual(bewertung.ampel, erwartet)
+
+
+class TestViertesZielOhneEingriff(unittest.TestCase):
+    """Das Open-Closed-Versprechen der Dokumentation, am Code geprueft.
+
+    Behauptet wird, ein viertes Studienziel sei eine neue Unterklasse und
+    sonst nichts. Dieser Test legt genau das an und laesst es den vollen Weg
+    gehen: speichern, wieder laden, bewerten. Faellt irgendwo doch eine
+    Aufzaehlung aller Zielarten an, schlaegt er fehl.
+    """
+
+    def setUp(self) -> None:
+        class Kostenziel(Studienziel):
+            """Ein frei erfundenes viertes Ziel, nur fuer diesen Test."""
+
+            bedeutung = ("hoechstes Budget in Euro", "erlaubte Ueberschreitung")
+
+            @property
+            def titel(self) -> str:
+                return f"Hoechstens {self.zielwert:.0f} Euro"
+
+            def bewerte(self, kennzahlen: Kennzahlen) -> "Zielbewertung":
+                from studiendashboard.ergebnis import Zielbewertung
+
+                return Zielbewertung(
+                    titel=self.titel, kennwert="0", zusatz="Euro",
+                    hinweis="Testziel", ampel=Ampel.GRUEN,
+                )
+
+        self.klasse = Kostenziel
+
+    def tearDown(self) -> None:
+        Studienziel._arten.pop("kostenziel", None)
+
+    def test_die_unterklasse_traegt_sich_selbst_ein(self) -> None:
+        self.assertEqual(self.klasse.kennung(), "kostenziel")
+        self.assertIs(Studienziel.mit_kennung("kostenziel"), self.klasse)
+
+    def test_die_zielfabrik_kennt_es_ohne_aenderung(self) -> None:
+        ziel = erzeuge_ziel("kostenziel", 15000, 500, ist_aktiv=True)
+        self.assertIsInstance(ziel, self.klasse)
+        self.assertEqual(ziel.titel, "Hoechstens 15000 Euro")
+        self.assertIn("kostenziel", bedeutungen())
+
+    def test_der_rundlauf_durch_die_datenbank_traegt_es(self) -> None:
+        with tempfile.TemporaryDirectory() as ordner:
+            pfad = Path(ordner) / "ziele.db"
+            repository = SQLiteStudiengangRepository(str(pfad))
+            repository.speichere(erzeuge_beispielstudiengang())
+            repository.speichere_ziele([self.klasse(15000, 500)])
+            geladen = repository.lade_ziele()
+        self.assertEqual(len(geladen), 1)
+        self.assertIsInstance(geladen[0], self.klasse)
+        self.assertEqual(geladen[0].zielwert, 15000)
+
+    def test_eine_unbekannte_kennung_wird_benannt(self) -> None:
+        with self.assertRaises(ValueError) as fehler:
+            erzeuge_ziel("gibtsnicht", 1, 1, ist_aktiv=True)
+        self.assertIn("gibtsnicht", str(fehler.exception))
+        self.assertIn("zeitziel", str(fehler.exception))
 
 
 if __name__ == "__main__":

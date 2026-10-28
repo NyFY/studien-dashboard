@@ -1,14 +1,14 @@
 """Datentransportobjekte (Data Transfer Objects).
 
-Dieses Paket enthaelt nur Daten, keine Logik. Alle darueber liegenden
-Schichten duerfen es benutzen, es selbst benutzt keine andere Schicht ausser
-den Fachklassen.
+Dieses Paket enthaelt nur Daten, keine Logik. Es bringt die Werte vom
+Controller zur Oberflaeche und beschreibt dabei ausdruecklich, welche Werte
+die Anzeige erwartet.
+
+Die Ergebnistypen der Zielbewertung liegen nicht hier, sondern im Paket
+``ergebnis``: Sie entstehen in der Fachlogik und nicht erst fuer die Anzeige.
+``DashboardDaten`` nimmt sie entgegen und reicht sie weiter.
 """
 
 from .dashboard_daten import DashboardDaten, Kennzahlen, ModulZeile, Verlaufspunkt
-from .ergebnis import Ampel, Zielbewertung
 
-__all__ = [
-    "Ampel", "DashboardDaten", "Kennzahlen", "ModulZeile",
-    "Verlaufspunkt", "Zielbewertung",
-]
+__all__ = ["DashboardDaten", "Kennzahlen", "ModulZeile", "Verlaufspunkt"]

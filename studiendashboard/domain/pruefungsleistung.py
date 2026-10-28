@@ -51,10 +51,16 @@ class Pruefungsleistung(ABC):
 
     @property
     def bester_versuch(self) -> Versuch | None:
-        """Der Versuch mit der besten Note, oder None ohne Versuche."""
-        if not self._versuche:
+        """Der bestandene Versuch mit der besten Note, sonst None.
+
+        Gewertet wird nur, was auch bestanden ist. Da jeder Versuch seine
+        eigene Bestehensgrenze mitfuehrt, kann ein Versuch mit der besseren
+        Note durchgefallen sein; er darf die Modulnote dann nicht stellen.
+        """
+        bestandene = [versuch for versuch in self._versuche if versuch.ist_bestanden]
+        if not bestandene:
             return None
-        return min(self._versuche, key=lambda v: v.note.wert)
+        return min(bestandene, key=lambda v: v.note.wert)
 
     @property
     def bestanden_am(self) -> date | None:

@@ -10,8 +10,9 @@ from studiendashboard.repository import (
     SpeicherStudiengangRepository, erzeuge_beispielstudiengang,
 )
 from studiendashboard.service import FortschrittsService, NotenService
+from studiendashboard.ergebnis import Ampel
 from studiendashboard.view import KonsolenView
-from studiendashboard.ziele import Ampel, Notenziel, WipZiel, Zeitziel
+from studiendashboard.ziele import Notenziel, WipZiel, Zeitziel
 
 STICHTAG = date(2026, 9, 16)
 
@@ -42,8 +43,8 @@ class TestDashboardController(unittest.TestCase):
         zeilen = self.daten.offene_module
         self.assertEqual(len(zeilen), 4)
         self.assertEqual(zeilen[0].kuerzel, "DLBITIML")
-        self.assertEqual(zeilen[0].ampel, "rot")
-        self.assertEqual(zeilen[-1].ampel, "gruen")
+        self.assertEqual(zeilen[0].ampel, Ampel.ROT)
+        self.assertEqual(zeilen[-1].ampel, Ampel.GRUEN)
 
     def test_fristen_werden_je_pruefungsart_gebildet(self) -> None:
         fristen = {zeile.kuerzel: zeile.naechste_frist for zeile in self.daten.offene_module}
@@ -74,10 +75,6 @@ class TestDashboardController(unittest.TestCase):
         self.assertIn("STUDIEN-DASHBOARD", ausgabe)
         self.assertIn("DLBITIML", ausgabe)
         self.assertIn("75 von 180 ECTS", ausgabe)
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestKonsolenausgabe(unittest.TestCase):
@@ -148,7 +145,28 @@ class TestFristdarstellung(unittest.TestCase):
         self.assertEqual(zeile.naechste_frist, "Portfolio 01.10.2026")
 
     def test_stichtag_vor_studienbeginn_bleibt_widerspruchsfrei(self) -> None:
-        daten = self._daten(date(2024, 10, 15))
+        """Der Studienbeginn des Beispieldatensatzes ist der 01.10.2024."""
+        daten = self._daten(date(2024, 1, 1))
         self.assertEqual(daten.kennzahlen.ects_ist, 0)
         self.assertEqual(daten.kennzahlen.offene_module, 0)
         self.assertEqual(daten.offene_module, ())
+
+    def test_verlauf_laeuft_vor_dem_studienbeginn_nicht_rueckwaerts(self) -> None:
+        """Ein Stichtag vor dem Beginn darf die Kurve nicht zurueckziehen.
+
+        Sonst entstuende ein Punkt mit negativem Tag, und das Diagramm
+        zeichnete die Istlinie aus der Flaeche heraus.
+        """
+        verlauf = self._daten(date(2024, 1, 1)).verlauf
+        tage = [punkt.tag for punkt in verlauf]
+        self.assertEqual(tage, sorted(tage))
+        self.assertGreaterEqual(min(tage), 0)
+
+    def test_stichtag_genau_am_studienbeginn_liefert_einen_punkt(self) -> None:
+        """Mit einem einzigen Verlaufspunkt darf keine Linie gezeichnet werden."""
+        verlauf = self._daten(date(2024, 10, 1)).verlauf
+        self.assertEqual(len(verlauf), 1)
+        self.assertEqual(verlauf[0].tag, 0)
+
+if __name__ == "__main__":
+    unittest.main()

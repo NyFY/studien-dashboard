@@ -9,7 +9,8 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
-from ..dto import DashboardDaten, Kennzahlen, Verlaufspunkt, Zielbewertung
+from ..dto import DashboardDaten, Kennzahlen, Verlaufspunkt
+from ..ergebnis import Ampel, Zielbewertung
 
 DUNKEL = "#082540"
 AKZENT = "#4B91B9"
@@ -52,8 +53,12 @@ class KennzahlKachel(ttk.Frame):
 class Fortschrittsbalken(tk.Canvas):
     """Waagerechter Balken mit einer Marke fuer den Sollstand."""
 
+    #: Hoehe der Zeichenflaeche: Beschriftung oben, Balken darunter.
+    HOEHE = 36
+
     def __init__(self, eltern: tk.Misc, kennzahlen: Kennzahlen, breite: int = 340) -> None:
-        super().__init__(eltern, width=breite, height=32, background=WEISS, highlightthickness=0)
+        super().__init__(eltern, width=breite, height=self.HOEHE,
+                         background=WEISS, highlightthickness=0)
         self._kennzahlen = kennzahlen
         self._breite = breite
         self.bind("<Configure>", lambda _ereignis: self._zeichne())
@@ -65,12 +70,16 @@ class Fortschrittsbalken(tk.Canvas):
         anteil = self._kennzahlen.ects_ist / self._kennzahlen.ects_gesamt
         soll = self._kennzahlen.ects_soll / self._kennzahlen.ects_gesamt
 
-        self.create_rectangle(0, 14, breite, 30, fill="#EDF1F4", outline="")
-        self.create_rectangle(0, 14, breite * anteil, 30, fill=AKZENT, outline="")
+        self.create_rectangle(0, 18, breite, 34, fill="#EDF1F4", outline="")
+        self.create_rectangle(0, 18, breite * anteil, 34, fill=AKZENT, outline="")
         marke = breite * soll
-        self.create_line(marke, 8, marke, 34, fill=DUNKEL, width=2)
+        self.create_line(marke, 16, marke, 36, fill=DUNKEL, width=2)
+        # Die Beschriftung bleibt innerhalb der Flaeche, auch wenn die Marke
+        # ganz am Rand steht; sonst schiebt sie sich aus dem Bild.
+        beschriftung = f"Soll {self._kennzahlen.ects_soll:.0f}"
+        mitte = min(max(marke, 4.5 * len(beschriftung)), breite - 4.5 * len(beschriftung))
         self.create_text(
-            marke, 4, text=f"Soll {self._kennzahlen.ects_soll:.0f}", anchor="s",
+            mitte, 1, text=beschriftung, anchor="n",
             font=("Helvetica", 8, "bold"), fill=DUNKEL,
         )
 
@@ -130,8 +139,10 @@ class BurnUpDiagramm(tk.Canvas):
                          text="Soll", font=("Helvetica", 9, "bold"), fill=GRAU)
 
         # Istverlauf
+        # _istpunkte liefert eine flache Liste x, y, x, y, ...; eine Linie
+        # braucht zwei Punkte und damit vier Koordinaten.
         punkte = self._istpunkte(daten.verlauf)
-        if len(punkte) >= 2:
+        if len(punkte) >= 4:
             self.create_line(*punkte, fill=AKZENT, width=3)
         for eintrag in daten.verlauf:
             x, y = self._x(eintrag.tag), self._y(eintrag.ects)
@@ -233,14 +244,12 @@ class Modultabelle(ttk.Frame):
             self.tabelle.heading(name, text=ueberschrift)
             self.tabelle.column(name, width=breite, anchor=ausrichtung, stretch=(name == "modul"))
 
-        for farbe in ("gruen", "gelb", "rot"):
-            self.tabelle.tag_configure(farbe, foreground={"gruen": "#2E7D32",
-                                                          "gelb": "#8A6100",
-                                                          "rot": "#C62828"}[farbe])
+        for ampel in Ampel:
+            self.tabelle.tag_configure(ampel.value, foreground=ampel.schriftfarbe)
 
         for zeile in daten.offene_module:
             self.tabelle.insert(
-                "", "end", tags=(zeile.ampel,),
+                "", "end", tags=(zeile.ampel.value,),
                 values=(
                     zeile.kuerzel, zeile.bezeichnung, zeile.ects, zeile.status, zeile.note,
                     zeile.naechste_frist,

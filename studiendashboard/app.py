@@ -169,6 +169,16 @@ def main(argumente: list[str] | None = None) -> int:
         print(f"'{gewaehlt.stichtag}' ist kein gültiges Datum. Erwartet wird JJJJ-MM-TT.")
         return 2
 
+    # Die Schalter ueberschreiben Zielwerte, die sonst aus der Datenbank
+    # kommen. Ohne Pruefung liefe das Programm auch mit einer Zielnote von
+    # 7,5 weiter und zeigte eine Ampel zu einem Ziel, das es nicht gibt.
+    if gewaehlt.zielnote is not None and not NotenService.ist_gueltige_note(gewaehlt.zielnote):
+        print(f"{gewaehlt.zielnote} ist keine Notenstufe der IU. Erlaubt sind 1,0 bis 4,0.")
+        return 2
+    if gewaehlt.wip_grenze is not None and gewaehlt.wip_grenze < 1:
+        print("Die Modulgrenze muss mindestens 1 betragen.")
+        return 2
+
     anwendung = DashboardApp(
         datenbankpfad=gewaehlt.datenbank,
         im_speicher=gewaehlt.im_speicher,

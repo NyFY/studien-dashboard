@@ -56,7 +56,9 @@ class KonsolenView(DashboardView):
         soll_anteil = kennzahlen.ects_soll / kennzahlen.ects_gesamt
         laenge = 60
         gefuellt = min(round(laenge * anteil), laenge)
-        marke = round(laenge * soll_anteil)
+        # Die Marke muss im Balken bleiben: Bei einem Sollstand von 100 Prozent
+        # faellt sie sonst aus dem Feld, waehrend die Legende sie weiter nennt.
+        marke = min(round(laenge * soll_anteil), laenge - 1)
 
         balken = ["-"] * laenge
         for stelle in range(gefuellt):
@@ -89,14 +91,13 @@ class KonsolenView(DashboardView):
         kopf = f"  {'':<5}{'KÜRZEL':<16}{'MODUL':<44}{'ECTS':>5}  {'NÄCHSTE FRIST':<34}{'OFFEN':>8}"
         print(kopf)
         print("  " + "-" * (len(kopf) - 2))
-        zeichen = {"gruen": "[ok]", "gelb": "[!]", "rot": "[X]"}
         for zeile in daten.offene_module:
             bezeichnung = (
                 zeile.bezeichnung if len(zeile.bezeichnung) <= 43
                 else zeile.bezeichnung[:40] + "..."
             )
             print(
-                f"  {zeichen[zeile.ampel]:<5}{zeile.kuerzel:<16}{bezeichnung:<44}"
+                f"  {zeile.ampel.zeichen:<5}{zeile.kuerzel:<16}{bezeichnung:<44}"
                 f"{zeile.ects:>5}  {zeile.naechste_frist:<34}"
                 f"{(str(zeile.offen_seit_tage) + ' Tage') if zeile.offen_seit_tage is not None else '-':>8}"
             )

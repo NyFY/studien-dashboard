@@ -5,8 +5,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import date
 
-from ..domain import Modul
+from ..domain import Modul, Studiengang
 from ..dto import DashboardDaten, Kennzahlen, ModulZeile
+from ..ergebnis import Ampel
 from ..repository import StudiengangRepository
 from ..service import FortschrittsService, NotenService
 from ..ziele import Studienziel
@@ -70,7 +71,7 @@ class DashboardController:
 
     # -- interne Bausteine ------------------------------------------------
 
-    def _berechne_kennzahlen(self, studiengang, stichtag: date) -> Kennzahlen:
+    def _berechne_kennzahlen(self, studiengang: Studiengang, stichtag: date) -> Kennzahlen:
         offene = studiengang.offene_module_am(stichtag)
         # Nur Module mit bekanntem Startdatum koennen ein Alter haben.
         mit_alter = [
@@ -143,9 +144,9 @@ class DashboardController:
         return f"{letzte.art()} {letzte.endfrist:%d.%m.%Y} verstrichen"
 
     @staticmethod
-    def _ampel_fuer_alter(tage: int | None) -> str:
+    def _ampel_fuer_alter(tage: int | None) -> Ampel:
         if tage is None:
-            return "gruen"
+            return Ampel.GRUEN
         if tage > _ROT_AB_TAGEN:
-            return "rot"
-        return "gelb" if tage > _GELB_AB_TAGEN else "gruen"
+            return Ampel.ROT
+        return Ampel.GELB if tage > _GELB_AB_TAGEN else Ampel.GRUEN
